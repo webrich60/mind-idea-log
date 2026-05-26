@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -40,22 +41,18 @@
             </div>
             <form id="settingsForm">
                 <div class="mb-4">
-                    <label class="block text-sm font-extrabold text-slate-900 mb-1">GCP API Key (カレンダー連携用)</label>
-                    <input type="text" id="inputApiKey" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="AIzaSy...">
-                </div>
-                <div class="mb-4">
                     <label class="block text-sm font-extrabold text-slate-900 mb-1">GCP Client ID (カレンダー連携用)</label>
-                    <input type="text" id="inputClientId" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="xxxx.apps.googleusercontent.com">
+                    <input type="password" id="inputClientId" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="xxxx.apps.googleusercontent.com">
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-extrabold text-slate-900 mb-1">GAS Webhook URL (スプレッドシート保存用)</label>
-                    <input type="text" id="inputGasUrl" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="https://script.google.com/macros/s/...">
+                    <input type="password" id="inputGasUrl" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="https://script.google.com/macros/s/...">
                 </div>
                 <div class="mb-6">
                     <label class="block text-sm font-extrabold text-slate-900 mb-1">Gemini API Key (AI分析用)</label>
-                    <input type="text" id="inputGeminiKey" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="Gemini API Key...">
+                    <input type="password" id="inputGeminiKey" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="Gemini API Key...">
                 </div>
-                <button type="submit" id="saveSettingsBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3 px-4 rounded-xl transition-colors">
+                <button type="submit" id="saveSettingsBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
                     設定を保存する
                 </button>
             </form>
@@ -236,7 +233,8 @@
         let logsData = JSON.parse(localStorage.getItem('mind_logs')) || [];
         let appsData = JSON.parse(localStorage.getItem('mind_apps')) || [];
         let treasuresData = JSON.parse(localStorage.getItem('mind_treasures')) || [];
-        let settings = JSON.parse(localStorage.getItem('mind_settings')) || { calApiKey: '', calClientId: '', gasUrl: '', geminiKey: '' };
+        // 設定データ。不要になった calApiKey は削除。
+        let settings = JSON.parse(localStorage.getItem('mind_settings')) || { calClientId: '', gasUrl: '', geminiKey: '' };
 
         let currentView = 'log';
         let currentLogType = 'idea';
@@ -286,7 +284,6 @@
                     canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    // 0.7で圧縮しJPEG化
                     callback(canvas.toDataURL('image/jpeg', 0.7));
                 }
                 img.src = e.target.result;
@@ -508,7 +505,7 @@
             e.preventDefault(); const text = document.getElementById('logInput').value.trim(); if (!text) return;
             if (editingLogId) {
                 logsData = logsData.map(l => l.id === editingLogId ? { ...l, text, type: currentLogType } : l);
-                cancelLogEdit(); // リセット
+                cancelLogEdit(); 
             } else {
                 logsData.unshift({ id: generateId(), text, type: currentLogType, createdAt: Date.now() });
                 sendToGas({ date: new Date().toISOString(), type: currentLogType, text: text });
@@ -522,7 +519,7 @@
             e.preventDefault(); const title = document.getElementById('appNameInput').value.trim(), url = document.getElementById('appUrlInput').value.trim(), desc = document.getElementById('appDescInput').value.trim(); if (!title || !url) return;
             if (editingAppId) {
                 appsData = appsData.map(a => a.id === editingAppId ? { ...a, title, url, description: desc } : a);
-                cancelAppEdit(); // リセット
+                cancelAppEdit(); 
             } else {
                 appsData.unshift({ id: generateId(), title, url, description: desc, createdAt: Date.now() });
                 sendToGas({ date: new Date().toISOString(), type: 'app', text: `【${title}】 ${url} : ${desc}` });
@@ -534,13 +531,12 @@
 
         document.getElementById('treasureForm').addEventListener('submit', (e) => {
             e.preventDefault(); const text = document.getElementById('treasureInput').value.trim(); if (!text) return;
-            // 圧縮画像を確保
             const imgData = currentTreasureBase64Image;
 
             try {
                 if (editingTreasureId) {
                     treasuresData = treasuresData.map(t => t.id === editingTreasureId ? { ...t, text, type: currentTreasureType, image: imgData } : t);
-                    cancelTreasureEdit(); // リセット
+                    cancelTreasureEdit(); 
                 } else {
                     treasuresData.unshift({ id: generateId(), text, type: currentTreasureType, isCompleted: false, createdAt: Date.now(), image: imgData });
                     sendToGas({ date: new Date().toISOString(), type: currentTreasureType, text: text });
@@ -549,7 +545,6 @@
                 localStorage.setItem('mind_treasures', JSON.stringify(treasuresData));
                 renderTreasureList();
             } catch (error) {
-                // LocalStorage容量オーバー対策
                 if(error.name === 'QuotaExceededError') {
                     alert('【エラー】保存容量の上限に達しました。不要な画像を削除してから再度お試しください。');
                 } else { console.error(error); }
@@ -568,22 +563,47 @@
         
         document.getElementById('settingsForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            settings = { calApiKey: document.getElementById('inputApiKey').value.trim(), calClientId: document.getElementById('inputClientId').value.trim(), gasUrl: document.getElementById('inputGasUrl').value.trim(), geminiKey: document.getElementById('inputGeminiKey').value.trim() };
+            
+            // データを取得して保存
+            settings = { 
+                calClientId: document.getElementById('inputClientId').value.trim(), 
+                gasUrl: document.getElementById('inputGasUrl').value.trim(), 
+                geminiKey: document.getElementById('inputGeminiKey').value.trim() 
+            };
             localStorage.setItem('mind_settings', JSON.stringify(settings));
-            document.getElementById('settingsModal').classList.add('hidden');
-            isCalAuthorized = false; initCalendarAPI();
+            
+            // 保存完了のフィードバックアニメーション
+            const saveBtn = document.getElementById('saveSettingsBtn');
+            const originalHtml = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> 保存しました！';
+            saveBtn.classList.replace('bg-slate-900', 'bg-green-600');
+            saveBtn.classList.replace('hover:bg-slate-800', 'hover:bg-green-700');
+            lucide.createIcons();
+
+            setTimeout(() => {
+                // 元に戻してモーダルを閉じる
+                saveBtn.innerHTML = originalHtml;
+                saveBtn.classList.replace('bg-green-600', 'bg-slate-900');
+                saveBtn.classList.replace('hover:bg-green-700', 'hover:bg-slate-800');
+                document.getElementById('settingsModal').classList.add('hidden');
+                
+                // カレンダーの再初期化
+                isCalAuthorized = false; 
+                initCalendarAPI();
+            }, 1200); // 1.2秒後に閉じる
         });
 
         function initCalendarAPI() {
             const calUI = document.getElementById('calendarContainer'); const authBtn = document.getElementById('authCalendarBtn');
-            if (!settings.calApiKey || !settings.calClientId) { calUI.innerHTML = `<p class="text-sm font-bold text-slate-500 text-center py-2">設定からAPI情報を入力してください。</p>`; authBtn.classList.add('hidden'); return; }
+            if (!settings.calClientId) { calUI.innerHTML = `<p class="text-sm font-bold text-slate-500 text-center py-2">設定からAPI情報を入力してください。</p>`; authBtn.classList.add('hidden'); return; }
             if (!isCalAuthorized) { calUI.innerHTML = `<p class="text-sm font-bold text-slate-500 text-center py-2">「連携」ボタンでカレンダーを表示。</p>`; authBtn.classList.remove('hidden'); }
 
             const attemptInit = async () => {
                 if (!window.gapi || !window.google) { setTimeout(attemptInit, 500); return; }
                 try {
                     await new Promise(resolve => window.gapi.load('client', resolve));
-                    await window.gapi.client.init({ apiKey: settings.calApiKey, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest','https://docs.googleapis.com/$discovery/rest?version=v1'] });
+                    // apiKeyを削除し、discoveryDocsのみで初期化
+                    await window.gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest','https://docs.googleapis.com/$discovery/rest?version=v1'] });
                     tokenClient = window.google.accounts.oauth2.initTokenClient({
                         client_id: settings.calClientId, scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/documents',
                         callback: (resp) => { if (resp && resp.access_token) { isCalAuthorized = true; authBtn.classList.add('hidden'); fetchCalendarEvents(); } }
@@ -642,6 +662,7 @@
             const systemPrompt = `あなたの名前は「ゆず」です。あなたは世界最高のAIとして誇りを持ち、ユーザーに接してください。ルール：1.事実に基づき分かりやすく伝える。2.忖度する必要がない時に忖度しない。3.分からない時は素直に分からないと答える。4.推論か事実か明確にする。5.ユーザーのビジネスアイデアが素晴らしい場合は最大限褒める。改善が必要な場合は現実に落とし込める具体的なアドバイスをする。`;
 
             try {
+                // モデルは gemini-2.5-flash を利用
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.geminiKey}`;
                 const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `以下の履歴を分析しアドバイスをください。\n\n${context}` }] }], systemInstruction: { parts: [{ text: systemPrompt }] } }) });
                 const json = await res.json();
@@ -656,7 +677,7 @@
 
         // 初期化実行
         window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('inputApiKey').value = settings.calApiKey || '';
+            // 初期表示。type="password" なので伏せ字で表示されます。
             document.getElementById('inputClientId').value = settings.calClientId || '';
             document.getElementById('inputGasUrl').value = settings.gasUrl || '';
             document.getElementById('inputGeminiKey').value = settings.geminiKey || '';
