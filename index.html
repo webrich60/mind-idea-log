@@ -1,0 +1,794 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>マインド＆アイデア</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google APIs -->
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .selection-bg::selection { background-color: #a5b4fc; }
+        .tab-active { border-bottom-width: 4px; border-color: #312e81; color: #312e81; font-weight: 800; background-color: #e0e7ff; }
+        .tab-inactive { border-bottom-width: 4px; border-color: transparent; color: #475569; font-weight: 700; }
+        .tab-inactive:hover { background-color: #f1f5f9; border-color: #cbd5e1; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900 font-sans flex flex-col selection-bg">
+
+    <!-- Settings Modal (共通) -->
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden justify-center items-center p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md border-4 border-slate-800">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-extrabold text-slate-900">システム設定</h3>
+                <button id="closeSettingsBtn" class="text-slate-500 hover:text-slate-900">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <p class="text-sm font-bold text-slate-700 mb-4 bg-slate-100 p-3 rounded-lg border-2 border-slate-300">
+                ※Googleカレンダー等を連携するには、GCPにて「OAuth 2.0 クライアント ID」と「API キー」を発行する必要があります。
+            </p>
+            <form id="settingsForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-extrabold text-slate-900 mb-1">API Key</label>
+                    <input type="text" id="inputApiKey" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="AIzaSy...">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-extrabold text-slate-900 mb-1">Client ID</label>
+                    <input type="text" id="inputClientId" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="xxxx.apps.googleusercontent.com">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-extrabold text-slate-900 mb-1">GAS Webhook URL (任意)</label>
+                    <input type="text" id="inputGasUrl" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="https://script.google.com/macros/s/...">
+                </div>
+                <button type="submit" id="saveSettingsBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3 px-4 rounded-xl border-2 border-transparent transition-colors">
+                    設定を保存する
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-10 border-b-4 border-slate-800 gap-4">
+        <h1 class="text-xl md:text-2xl font-extrabold flex items-center gap-2 text-slate-900">
+            <i data-lucide="brain" class="text-indigo-600 w-6 h-6 md:w-8 md:h-8"></i>
+            マインド＆アイデア
+        </h1>
+        <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+            <button id="openSettingsBtn" class="flex items-center gap-2 text-sm font-extrabold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border-2 border-slate-400 px-3 py-2 rounded-lg transition-colors" title="設定">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+            </button>
+            <button id="exportCsvBtn" class="flex items-center gap-2 text-sm font-extrabold text-indigo-800 bg-indigo-100 hover:bg-indigo-200 border-2 border-indigo-300 px-3 py-2 rounded-lg transition-colors" title="記録をCSV出力">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                <span class="hidden md:inline">出力</span>
+            </button>
+            <button id="exportDocsBtn" class="flex items-center gap-2 text-sm font-extrabold text-blue-800 bg-blue-100 hover:bg-blue-200 border-2 border-blue-400 px-3 py-2 rounded-lg transition-colors" title="記録をGoogle Docsへ">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                <span class="hidden md:inline">Docs</span>
+            </button>
+            <button id="authCalendarBtn" class="text-xs bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 px-3 rounded-lg flex items-center gap-1 transition-colors">
+                <i data-lucide="log-in" class="w-3 h-3"></i> <span class="hidden md:inline">連携</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white border-b-2 border-slate-300 px-4 md:px-8 flex overflow-x-auto">
+        <button onclick="switchTab('log')" id="tab-log" class="tab-active flex items-center gap-2 px-4 py-3 min-w-max transition-colors">
+            <i data-lucide="edit-3" class="w-5 h-5"></i> 思考の記録
+        </button>
+        <button onclick="switchTab('apps')" id="tab-apps" class="tab-inactive flex items-center gap-2 px-4 py-3 min-w-max transition-colors">
+            <i data-lucide="layout-grid" class="w-5 h-5"></i> アプリ集
+        </button>
+        <button onclick="switchTab('treasure')" id="tab-treasure" class="tab-inactive flex items-center gap-2 px-4 py-3 min-w-max transition-colors">
+            <i data-lucide="map" class="w-5 h-5 text-amber-600"></i> 宝の地図
+        </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 overflow-hidden relative">
+        
+        <!-- ========================================== -->
+        <!-- VIEW 1: 思考の記録 (マインド＆アイデア) -->
+        <!-- ========================================== -->
+        <div id="view-log" class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+            <!-- Left Column: Input & AI Analysis -->
+            <div class="lg:col-span-5 space-y-6 flex flex-col h-[calc(100vh-12rem)] overflow-y-auto pr-2 pb-4">
+                
+                <!-- Input Section -->
+                <section class="bg-white p-5 rounded-2xl shadow-md border-4 border-slate-800 flex-shrink-0">
+                    <h2 class="text-lg font-extrabold mb-4 text-slate-900 flex items-center gap-2">
+                        今の状態を記録する
+                    </h2>
+                    <form id="logForm">
+                        <div class="grid grid-cols-2 gap-3 mb-4" id="typeButtons">
+                            <!-- Buttons generated by JS -->
+                        </div>
+                        <textarea id="logInput" placeholder="アイデアの種、今の気分、ふと考えたこと..." class="w-full p-3 bg-slate-50 border-4 border-slate-300 rounded-xl focus:ring-0 focus:border-indigo-600 text-slate-900 font-bold resize-none h-32 mb-3 outline-none transition-colors"></textarea>
+                        <button type="submit" id="saveLogBtn" disabled class="w-full bg-indigo-700 hover:bg-indigo-800 text-white font-extrabold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors border-b-4 border-indigo-900 active:border-b-0 active:translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i data-lucide="send" class="w-5 h-5 btn-icon"></i> 記録を残す
+                        </button>
+                    </form>
+                </section>
+
+                <!-- AI Analysis Section -->
+                <section class="bg-indigo-50 p-5 rounded-2xl shadow-md border-4 border-indigo-800 flex-1 flex flex-col min-h-[300px]">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-extrabold text-indigo-900 flex items-center gap-2">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-indigo-700"></i> ゆずに分析してもらう
+                        </h2>
+                    </div>
+                    <button id="analyzeBtn" class="w-full bg-white border-4 border-indigo-800 hover:bg-indigo-100 text-indigo-900 font-extrabold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed mb-4">
+                        これまでの履歴を分析する
+                    </button>
+                    <div id="errorMsgContainer" class="hidden bg-red-100 text-red-800 font-bold p-3 rounded-xl border-2 border-red-800 flex items-start gap-2 mb-4 text-sm">
+                        <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 flex-shrink-0"></i><p id="errorMsgText"></p>
+                    </div>
+                    <div id="successMsgContainer" class="hidden bg-green-100 text-green-800 font-bold p-3 rounded-xl border-2 border-green-800 flex flex-col items-start gap-2 mb-4 text-sm">
+                        <p>Docs出力完了！</p><a id="successLink" href="#" target="_blank" class="underline break-all"></a>
+                    </div>
+                    <div class="flex-1 bg-white rounded-xl p-4 overflow-y-auto border-4 border-indigo-200 shadow-inner" id="analysisResultContainer">
+                        <div class="h-full flex flex-col items-center justify-center text-indigo-400 font-bold text-sm text-center">
+                            <i data-lucide="brain" class="w-12 h-12 mb-3 opacity-60"></i>
+                            <p>「分析する」ボタンを押すと、<br/>私「ゆず」がアドバイスをお返しします。</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Column: Calendar & Timeline -->
+            <div class="lg:col-span-7 flex flex-col gap-6 h-[calc(100vh-12rem)]">
+                <!-- Calendar -->
+                <section class="bg-white p-4 rounded-2xl shadow-md border-4 border-slate-800 flex-shrink-0">
+                    <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2 mb-3">
+                        <i data-lucide="calendar" class="w-5 h-5 text-slate-700"></i> 直近のスケジュール
+                    </h2>
+                    <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-3 max-h-32 overflow-y-auto" id="calendarContainer">
+                        <p class="text-sm font-bold text-slate-500 text-center py-2">設定からAPI情報を入力し、連携してください。</p>
+                    </div>
+                </section>
+
+                <!-- Timeline -->
+                <section class="bg-white p-5 rounded-2xl shadow-md border-4 border-slate-800 flex-1 flex flex-col overflow-hidden">
+                    <h2 class="text-lg font-extrabold mb-4 text-slate-900 border-b-4 border-slate-800 pb-2">
+                        履歴タイムライン (<span id="logCount">0</span>件)
+                    </h2>
+                    <div class="flex-1 overflow-y-auto pr-2 space-y-4" id="timelineContainer"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: アプリ集 (リンク格納ページ) -->
+        <!-- ========================================== -->
+        <div id="view-apps" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+            
+            <!-- Left Column: Add App Form -->
+            <div class="lg:col-span-4 space-y-6">
+                <section class="bg-white p-5 rounded-2xl shadow-md border-4 border-slate-800">
+                    <h2 class="text-lg font-extrabold mb-4 text-slate-900 flex items-center gap-2">
+                        <i data-lucide="plus-square" class="w-5 h-5 text-indigo-700"></i> 新しいアプリを登録
+                    </h2>
+                    <form id="appForm" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-extrabold text-slate-700 mb-1">アプリ名</label>
+                            <input type="text" id="appNameInput" required class="w-full p-2 bg-slate-50 border-4 border-slate-300 rounded-xl focus:border-indigo-600 font-bold outline-none" placeholder="例：タスク管理AI">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-extrabold text-slate-700 mb-1">URL (リンク)</label>
+                            <input type="url" id="appUrlInput" required class="w-full p-2 bg-slate-50 border-4 border-slate-300 rounded-xl focus:border-indigo-600 font-bold outline-none" placeholder="https://...">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-extrabold text-slate-700 mb-1">説明・メモ</label>
+                            <textarea id="appDescInput" class="w-full p-2 bg-slate-50 border-4 border-slate-300 rounded-xl focus:border-indigo-600 font-bold resize-none h-24 outline-none" placeholder="どんなアプリか、何に使うかなど"></textarea>
+                        </div>
+                        <button type="submit" id="saveAppBtn" disabled class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 disabled:opacity-50">
+                            格納する
+                        </button>
+                    </form>
+                </section>
+                <div class="bg-indigo-50 p-4 rounded-2xl border-4 border-indigo-200">
+                    <p class="text-sm font-bold text-indigo-900 leading-relaxed">
+                        <i data-lucide="info" class="w-4 h-4 inline mr-1"></i>
+                        作成したアプリのURLを集約する場所です。あなただけの最強のポートフォリオ・ツールボックスを作り上げましょう！
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right Column: App Grid -->
+            <div class="lg:col-span-8 bg-white p-5 rounded-2xl shadow-md border-4 border-slate-800 flex flex-col h-[calc(100vh-12rem)]">
+                <h2 class="text-xl font-extrabold mb-4 text-slate-900 border-b-4 border-slate-800 pb-2 flex justify-between items-center">
+                    <span>マイ・アプリコレクション</span>
+                    <span id="appCount" class="text-sm text-slate-500 bg-slate-100 px-3 py-1 rounded-full border-2 border-slate-300">0個</span>
+                </h2>
+                <div class="flex-1 overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 gap-4 content-start" id="appGridContainer">
+                    <!-- Apps generated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: 宝の地図 (バケットリスト) -->
+        <!-- ========================================== -->
+        <div id="view-treasure" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+            
+            <!-- Left Column: Add Treasure Form -->
+            <div class="lg:col-span-4 space-y-6">
+                <section class="bg-amber-50 p-5 rounded-2xl shadow-md border-4 border-amber-500">
+                    <h2 class="text-lg font-extrabold mb-4 text-amber-900 flex items-center gap-2">
+                        <i data-lucide="map-pin" class="w-5 h-5 text-amber-700"></i> 野望を書き込む
+                    </h2>
+                    <form id="treasureForm" class="space-y-4">
+                        <div class="grid grid-cols-3 gap-2" id="treasureTypeButtons">
+                            <!-- JS generates: do, go, want -->
+                        </div>
+                        <textarea id="treasureInput" required class="w-full p-3 bg-white border-4 border-amber-300 rounded-xl focus:border-amber-600 text-slate-900 font-bold resize-none h-28 outline-none" placeholder="ここに入力..."></textarea>
+                        <button type="submit" id="saveTreasureBtn" disabled class="w-full bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors border-b-4 border-amber-800 active:border-b-0 active:translate-y-1 disabled:opacity-50">
+                            地図に刻む
+                        </button>
+                    </form>
+                </section>
+                <div class="bg-white p-4 rounded-2xl border-4 border-slate-300">
+                    <p class="text-sm font-bold text-slate-700 leading-relaxed">
+                        <i data-lucide="sparkles" class="w-4 h-4 inline text-amber-500 mr-1"></i>
+                        「やりたい事」「行きたい場所」「欲しいもの」。思い描いた野望を可視化することで、実現への解像度がぐっと高まります。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right Column: Treasure List -->
+            <div class="lg:col-span-8 bg-white p-5 rounded-2xl shadow-md border-4 border-slate-800 flex flex-col h-[calc(100vh-12rem)]">
+                <h2 class="text-xl font-extrabold mb-4 text-slate-900 border-b-4 border-slate-800 pb-2">
+                    宝の地図（リスト）
+                </h2>
+                <div class="flex-1 overflow-y-auto pr-2 space-y-3" id="treasureListContainer">
+                    <!-- Treasures generated by JS -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- App Logic -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, deleteDoc, doc, setDoc, updateDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+        // --- Config & Firebase Setup ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- Global State ---
+        let currentUser = null;
+        let logsData = [];
+        let appsData = [];
+        let treasuresData = [];
+        let currentView = 'log'; // 'log', 'apps', 'treasure'
+        
+        // Log Form State
+        let currentLogType = 'idea';
+        let isSavingLog = false;
+        
+        // App Form State
+        let isSavingApp = false;
+        
+        // Treasure Form State
+        let currentTreasureType = 'do'; // 'do', 'go', 'want'
+        let isSavingTreasure = false;
+
+        // Settings State
+        let settings = { calApiKey: '', calClientId: '', gasUrl: '' };
+        let isCalAuthorized = false;
+        let tokenClient = null;
+
+        // --- Constants ---
+        const logTypes = {
+            idea: { label: 'アイデア', icon: 'lightbulb', color: 'text-amber-800', bg: 'bg-amber-100', border: 'border-amber-800' },
+            emotion: { label: '感情', icon: 'heart', color: 'text-rose-800', bg: 'bg-rose-100', border: 'border-rose-800' },
+            thought: { label: '思考', icon: 'brain', color: 'text-blue-800', bg: 'bg-blue-100', border: 'border-blue-800' },
+            other: { label: 'その他', icon: 'file-text', color: 'text-slate-900', bg: 'bg-slate-200', border: 'border-slate-900' }
+        };
+
+        const treasureTypes = {
+            do: { label: 'やりたい事', icon: 'zap', color: 'text-rose-600', bg: 'bg-rose-100', border: 'border-rose-500' },
+            go: { label: '行きたい場所', icon: 'plane', color: 'text-blue-600', bg: 'bg-blue-100', border: 'border-blue-500' },
+            want: { label: '欲しいもの', icon: 'gift', color: 'text-amber-600', bg: 'bg-amber-100', border: 'border-amber-500' }
+        };
+
+        // --- Window Expose for Inline Handlers ---
+        window.switchTab = (viewName) => {
+            currentView = viewName;
+            
+            // Update Tab UI
+            ['log', 'apps', 'treasure'].forEach(v => {
+                const tab = document.getElementById(`tab-${v}`);
+                if (v === viewName) {
+                    tab.classList.remove('tab-inactive');
+                    tab.classList.add('tab-active');
+                } else {
+                    tab.classList.remove('tab-active');
+                    tab.classList.add('tab-inactive');
+                }
+                
+                // Show/Hide Content
+                const viewEl = document.getElementById(`view-${v}`);
+                if (v === viewName) {
+                    viewEl.classList.remove('hidden');
+                } else {
+                    viewEl.classList.add('hidden');
+                }
+            });
+        };
+
+        window.deleteApp = async (id) => {
+            if (!currentUser || !confirm("このアプリをリストから削除しますか？")) return;
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'apps', id)); }
+            catch (err) { console.error(err); }
+        };
+
+        window.deleteTreasure = async (id) => {
+            if (!currentUser) return;
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'treasures', id)); }
+            catch (err) { console.error(err); }
+        };
+
+        window.toggleTreasureStatus = async (id, currentStatus) => {
+            if (!currentUser) return;
+            try { 
+                await updateDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'treasures', id), {
+                    isCompleted: !currentStatus
+                }); 
+            } catch (err) { console.error(err); }
+        };
+
+        window.deleteLog = async (id) => {
+            if (!currentUser) return;
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'logs', id)); }
+            catch (err) { console.error(err); }
+        };
+
+
+        // --- Initialize App ---
+        function initApp() {
+            lucide.createIcons();
+            
+            // 1. Setup Log Form
+            renderLogTypeButtons();
+            document.getElementById('logInput').addEventListener('input', (e) => {
+                document.getElementById('saveLogBtn').disabled = !e.target.value.trim() || isSavingLog || !currentUser;
+            });
+
+            // 2. Setup App Form
+            const appNameInput = document.getElementById('appNameInput');
+            const appUrlInput = document.getElementById('appUrlInput');
+            const checkAppForm = () => {
+                document.getElementById('saveAppBtn').disabled = !appNameInput.value.trim() || !appUrlInput.value.trim() || isSavingApp || !currentUser;
+            };
+            appNameInput.addEventListener('input', checkAppForm);
+            appUrlInput.addEventListener('input', checkAppForm);
+
+            // 3. Setup Treasure Form
+            renderTreasureTypeButtons();
+            document.getElementById('treasureInput').addEventListener('input', (e) => {
+                document.getElementById('saveTreasureBtn').disabled = !e.target.value.trim() || isSavingTreasure || !currentUser;
+            });
+
+            // Auth Start
+            initAuth();
+        }
+
+        // --- Render Helpers ---
+        function renderLogTypeButtons() {
+            const container = document.getElementById('typeButtons');
+            container.innerHTML = '';
+            for (const [key, typeInfo] of Object.entries(logTypes)) {
+                const isSelected = currentLogType === key;
+                const btnClass = isSelected 
+                    ? `${typeInfo.bg} ${typeInfo.border} ${typeInfo.color} shadow-inner border-4 font-extrabold`
+                    : `border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-400 border-4 font-extrabold`;
+                
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `flex flex-col items-center justify-center p-2 rounded-xl transition-all ${btnClass}`;
+                btn.innerHTML = `<i data-lucide="${typeInfo.icon}" class="w-5 h-5 mb-1 ${isSelected ? 'stroke-[3]' : ''}"></i><span class="text-xs">${typeInfo.label}</span>`;
+                btn.onclick = () => { currentLogType = key; renderLogTypeButtons(); };
+                container.appendChild(btn);
+            }
+            lucide.createIcons();
+        }
+
+        function renderTreasureTypeButtons() {
+            const container = document.getElementById('treasureTypeButtons');
+            container.innerHTML = '';
+            for (const [key, tInfo] of Object.entries(treasureTypes)) {
+                const isSelected = currentTreasureType === key;
+                const btnClass = isSelected 
+                    ? `${tInfo.bg} ${tInfo.border} ${tInfo.color} shadow-inner border-4 font-extrabold`
+                    : `border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-400 border-4 font-extrabold`;
+                
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `flex flex-col items-center justify-center p-2 rounded-xl transition-all ${btnClass}`;
+                btn.innerHTML = `<i data-lucide="${tInfo.icon}" class="w-5 h-5 mb-1 ${isSelected ? 'stroke-[3]' : ''}"></i><span class="text-xs">${tInfo.label}</span>`;
+                btn.onclick = () => { currentTreasureType = key; renderTreasureTypeButtons(); };
+                container.appendChild(btn);
+            }
+            lucide.createIcons();
+        }
+
+        function escapeHtml(unsafe) {
+            return (unsafe || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // --- Auth & Data Listeners ---
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else { await signInAnonymously(auth); }
+            } catch (error) { console.error("Auth failed:", error); }
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) { setupListeners(); }
+        });
+
+        function setupListeners() {
+            if (!currentUser) return;
+            const uid = currentUser.uid;
+
+            // 1. Logs
+            onSnapshot(collection(db, 'artifacts', appId, 'users', uid, 'logs'), (snapshot) => {
+                logsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => (b.createdAt?.toMillis() || Date.now()) - (a.createdAt?.toMillis() || Date.now()));
+                renderTimeline();
+            });
+
+            // 2. Apps
+            onSnapshot(collection(db, 'artifacts', appId, 'users', uid, 'apps'), (snapshot) => {
+                appsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => (b.createdAt?.toMillis() || Date.now()) - (a.createdAt?.toMillis() || Date.now()));
+                renderAppGrid();
+            });
+
+            // 3. Treasures
+            onSnapshot(collection(db, 'artifacts', appId, 'users', uid, 'treasures'), (snapshot) => {
+                treasuresData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).sort((a, b) => {
+                    // Sort by uncompleted first, then by date
+                    if (a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1;
+                    return (b.createdAt?.toMillis() || Date.now()) - (a.createdAt?.toMillis() || Date.now());
+                });
+                renderTreasureList();
+            });
+
+            // 4. Settings
+            onSnapshot(doc(db, 'artifacts', appId, 'users', uid, 'settings', 'config'), (docSnap) => {
+                if (docSnap.exists()) {
+                    settings = { ...settings, ...docSnap.data() };
+                    document.getElementById('inputApiKey').value = settings.calApiKey || '';
+                    document.getElementById('inputClientId').value = settings.calClientId || '';
+                    document.getElementById('inputGasUrl').value = settings.gasUrl || '';
+                    initCalendarAPI();
+                }
+            });
+        }
+
+        // --- Render Data Views ---
+        function renderTimeline() {
+            const container = document.getElementById('timelineContainer');
+            document.getElementById('logCount').textContent = logsData.length;
+            if (logsData.length === 0) {
+                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 font-bold"><i data-lucide="file-text" class="w-12 h-12 mb-2 opacity-30"></i><p>まだ記録がありません</p></div>`;
+                lucide.createIcons();
+                return;
+            }
+            container.innerHTML = logsData.map(log => {
+                const tInfo = logTypes[log.type] || logTypes.other;
+                const dStr = log.createdAt ? new Date(log.createdAt.toMillis()).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+                return `
+                    <div class="p-4 rounded-xl border-4 ${tInfo.bg} ${tInfo.border} relative group shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-1.5 text-sm font-extrabold ${tInfo.color}"><i data-lucide="${tInfo.icon}" class="w-4 h-4 stroke-[3]"></i>${tInfo.label}</div>
+                            <span class="text-xs text-slate-600 font-bold font-mono">${dStr}</span>
+                        </div>
+                        <p class="text-slate-900 font-bold whitespace-pre-wrap text-sm md:text-base leading-relaxed">${escapeHtml(log.text)}</p>
+                        <button onclick="window.deleteLog('${log.id}')" class="absolute top-3 right-3 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"><i data-lucide="trash-2" class="w-5 h-5 stroke-[2.5]"></i></button>
+                    </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function renderAppGrid() {
+            const container = document.getElementById('appGridContainer');
+            document.getElementById('appCount').textContent = `${appsData.length}個`;
+            
+            if (appsData.length === 0) {
+                container.innerHTML = `<div class="col-span-full h-40 flex flex-col items-center justify-center text-slate-400 font-bold"><i data-lucide="folder-open" class="w-12 h-12 mb-2 opacity-30"></i><p>まだ格納されたアプリはありません</p></div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = appsData.map(app => {
+                const url = escapeHtml(app.url);
+                return `
+                    <div class="bg-slate-50 border-4 border-slate-300 hover:border-indigo-400 p-4 rounded-xl relative group transition-colors flex flex-col">
+                        <button onclick="window.deleteApp('${app.id}')" class="absolute top-2 right-2 p-1 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity rounded bg-white border border-slate-200" title="削除">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                        <h3 class="font-extrabold text-slate-900 text-lg mb-1 pr-8 truncate" title="${escapeHtml(app.title)}">${escapeHtml(app.title)}</h3>
+                        <p class="text-xs text-slate-500 font-mono mb-3 truncate">${url}</p>
+                        <p class="text-sm font-bold text-slate-700 mb-4 flex-1 overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">${escapeHtml(app.description)}</p>
+                        <a href="${url}" target="_blank" rel="noopener noreferrer" class="mt-auto w-full bg-white border-2 border-slate-300 hover:bg-indigo-50 hover:border-indigo-400 hover:text-indigo-700 text-slate-700 font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm">
+                            <i data-lucide="external-link" class="w-4 h-4"></i> 開く
+                        </a>
+                    </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function renderTreasureList() {
+            const container = document.getElementById('treasureListContainer');
+            if (treasuresData.length === 0) {
+                container.innerHTML = `<div class="h-40 flex flex-col items-center justify-center text-amber-600/50 font-bold"><i data-lucide="map" class="w-12 h-12 mb-2 opacity-50"></i><p>野望を書き込んで、地図を作りましょう</p></div>`;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = treasuresData.map(t => {
+                const tInfo = treasureTypes[t.type] || treasureTypes.do;
+                const isDone = t.isCompleted;
+                const opacityClass = isDone ? 'opacity-60 bg-slate-50 grayscale' : 'bg-white';
+                const textClass = isDone ? 'line-through text-slate-500' : 'text-slate-900';
+                const borderClass = isDone ? 'border-slate-300' : tInfo.border;
+                
+                return `
+                    <div class="p-3 rounded-xl border-4 ${borderClass} ${opacityClass} flex items-center gap-3 transition-all relative group">
+                        <button onclick="window.toggleTreasureStatus('${t.id}', ${isDone})" class="flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center ${isDone ? 'bg-green-500 border-green-600 text-white' : 'border-slate-400 hover:border-green-500 hover:text-green-500 text-transparent'} transition-colors">
+                            <i data-lucide="check" class="w-5 h-5"></i>
+                        </button>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5 text-xs font-extrabold ${isDone ? 'text-slate-400' : tInfo.color} mb-0.5">
+                                <i data-lucide="${tInfo.icon}" class="w-3 h-3 stroke-[3]"></i>${tInfo.label}
+                            </div>
+                            <p class="font-bold ${textClass} break-words">${escapeHtml(t.text)}</p>
+                        </div>
+                        <button onclick="window.deleteTreasure('${t.id}')" class="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 p-2 transition-opacity">
+                            <i data-lucide="x" class="w-5 h-5 stroke-[3]"></i>
+                        </button>
+                    </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // --- Form Submits ---
+        // 1. Log Submit
+        document.getElementById('logForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('logInput').value.trim();
+            const btn = document.getElementById('saveLogBtn');
+            if (!text || !currentUser) return;
+
+            isSavingLog = true; btn.disabled = true;
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'logs'), { text, type: currentLogType, createdAt: serverTimestamp() });
+                if (settings.gasUrl) {
+                    fetch(settings.gasUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ date: new Date().toISOString(), type: currentLogType, text: text }) }).catch(e=>console.error(e));
+                }
+                document.getElementById('logInput').value = '';
+            } catch (err) { console.error(err); alert("保存失敗"); } 
+            finally { isSavingLog = false; btn.disabled = false; }
+        });
+
+        // 2. App Submit
+        document.getElementById('appForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('appNameInput').value.trim();
+            const url = document.getElementById('appUrlInput').value.trim();
+            const desc = document.getElementById('appDescInput').value.trim();
+            const btn = document.getElementById('saveAppBtn');
+            
+            if (!title || !url || !currentUser) return;
+            isSavingApp = true; btn.disabled = true; btn.textContent = '格納中...';
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'apps'), {
+                    title: title, url: url, description: desc, createdAt: serverTimestamp()
+                });
+                
+                // GASへデータ送信
+                if (settings.gasUrl) {
+                    fetch(settings.gasUrl, { 
+                        method: 'POST', 
+                        mode: 'no-cors', 
+                        body: JSON.stringify({ 
+                            date: new Date().toISOString(), 
+                            type: 'app', 
+                            text: `【${title}】 ${url} : ${desc}` 
+                        }) 
+                    }).catch(e=>console.error(e));
+                }
+
+                document.getElementById('appNameInput').value = '';
+                document.getElementById('appUrlInput').value = '';
+                document.getElementById('appDescInput').value = '';
+            } catch (err) { console.error(err); alert("保存失敗"); }
+            finally { isSavingApp = false; btn.disabled = true; btn.textContent = '格納する'; }
+        });
+
+        // 3. Treasure Submit
+        document.getElementById('treasureForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('treasureInput').value.trim();
+            const btn = document.getElementById('saveTreasureBtn');
+            if (!text || !currentUser) return;
+
+            isSavingTreasure = true; btn.disabled = true; btn.textContent = '記録中...';
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'treasures'), {
+                    text: text, type: currentTreasureType, isCompleted: false, createdAt: serverTimestamp()
+                });
+
+                // GASへデータ送信
+                if (settings.gasUrl) {
+                    fetch(settings.gasUrl, { 
+                        method: 'POST', 
+                        mode: 'no-cors', 
+                        body: JSON.stringify({ 
+                            date: new Date().toISOString(), 
+                            type: currentTreasureType, 
+                            text: text 
+                        }) 
+                    }).catch(e=>console.error(e));
+                }
+
+                document.getElementById('treasureInput').value = '';
+            } catch (err) { console.error(err); alert("保存失敗"); }
+            finally { isSavingTreasure = false; btn.disabled = true; btn.textContent = '地図に刻む'; }
+        });
+
+
+        // --- Gemini AI Analysis (from log view) ---
+        document.getElementById('analyzeBtn').onclick = async () => {
+            const btn = document.getElementById('analyzeBtn');
+            const resContainer = document.getElementById('analysisResultContainer');
+            
+            if (logsData.length === 0) { alert("分析する履歴がありません。"); return; }
+            btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> 分析中...';
+            resContainer.innerHTML = `<div class="h-full flex items-center justify-center text-slate-500 font-bold"><i data-lucide="loader-2" class="w-8 h-8 animate-spin mr-2"></i> 分析中...</div>`;
+            lucide.createIcons();
+
+            const context = logsData.slice(0, 30).map(l => `[${l.createdAt?new Date(l.createdAt.toMillis()).toLocaleString('ja-JP'):'Now'}] ${logTypes[l.type].label}: ${l.text}`).join('\n\n');
+            const systemPrompt = `あなたの名前は「ゆず」です。あなたは世界最高のAIとして誇りを持ち、ユーザーに接してください。
+ルール：
+1. 事実に基づいたことを分かりやすく伝える。嘘はつかない。
+2. 忖度なし。ただし文章中に「忖度なしに」という言葉は使わない。
+3. わからないときは素直に「分からない」と答える。
+4. 推論か事実か明確にする。
+5. アイデアが素晴らしい場合は最大限褒める。改善が必要な場合は具体的に現実に落とし込めるアドバイスをする。`;
+
+            const query = `以下の記録を分析し、アドバイスをください。\n\n【記録】\n${context}`;
+            const apiKey = ""; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            try {
+                let res = null;
+                for (let i = 0; i < 5; i++) {
+                    try {
+                        const fetchRes = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: query }] }], systemInstruction: { parts: [{ text: systemPrompt }] } }) });
+                        if (fetchRes.ok) { res = await fetchRes.json(); break; }
+                    } catch (e) { if (i===4) throw e; await new Promise(r => setTimeout(r, Math.pow(2, i)*1000)); }
+                }
+                if (!res) throw new Error("API failed");
+                const text = res.candidates?.[0]?.content?.parts?.[0]?.text || '結果なし';
+                resContainer.innerHTML = `<div class="prose prose-sm md:prose-base max-w-none text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">${text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-extrabold text-slate-900">$1</strong>')}</div>`;
+            } catch (err) {
+                console.error(err);
+                resContainer.innerHTML = '<p class="text-red-500 font-bold">エラーが発生しました。</p>';
+            } finally {
+                btn.disabled = false; btn.innerHTML = 'これまでの履歴を分析する';
+            }
+        };
+
+        // --- Settings, Calendar, Export Logic (Simplified from previous) ---
+        // Setting Modal Toggle
+        document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
+        document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
+        document.getElementById('settingsForm').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+            const newSettings = { calApiKey: document.getElementById('inputApiKey').value.trim(), calClientId: document.getElementById('inputClientId').value.trim(), gasUrl: document.getElementById('inputGasUrl').value.trim() };
+            try { await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'settings', 'config'), newSettings, { merge: true }); document.getElementById('settingsModal').classList.add('hidden'); isCalAuthorized = false; initCalendarAPI(); } 
+            catch (err) { alert("保存失敗"); }
+        };
+
+        // Calendar Auth
+        let apiInitTimer = null;
+        function initCalendarAPI() {
+            const calUI = document.getElementById('calendarContainer');
+            const authBtn = document.getElementById('authCalendarBtn');
+            if (!settings.calApiKey || !settings.calClientId) {
+                calUI.innerHTML = `<p class="text-sm font-bold text-slate-500 text-center py-2">設定からAPI情報を入力してください。</p>`; authBtn.classList.add('hidden'); return;
+            }
+            if(!isCalAuthorized) {
+                calUI.innerHTML = `<p class="text-sm font-bold text-slate-500 text-center py-2">「連携」ボタンでカレンダーを表示。</p>`; authBtn.classList.remove('hidden');
+            }
+
+            const attemptInit = async () => {
+                if (!window.gapi || !window.google) { apiInitTimer = setTimeout(attemptInit, 500); return; }
+                clearTimeout(apiInitTimer);
+                try {
+                    await new Promise(resolve => window.gapi.load('client', resolve));
+                    await window.gapi.client.init({ apiKey: settings.calApiKey, discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest','https://docs.googleapis.com/$discovery/rest?version=v1'] });
+                    tokenClient = window.google.accounts.oauth2.initTokenClient({
+                        client_id: settings.calClientId, scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/documents',
+                        callback: (resp) => { if (resp && resp.access_token) { isCalAuthorized = true; authBtn.classList.add('hidden'); fetchCalendarEvents(); } }
+                    });
+                } catch(err) { console.error(err); }
+            };
+            attemptInit();
+        }
+
+        document.getElementById('authCalendarBtn').onclick = () => { if (tokenClient) tokenClient.requestAccessToken({ prompt: 'consent' }); };
+
+        async function fetchCalendarEvents() {
+            if (!window.gapi || !window.gapi.client.calendar) return;
+            try {
+                const response = await window.gapi.client.calendar.events.list({ 'calendarId': 'primary', 'timeMin': (new Date()).toISOString(), 'showDeleted': false, 'singleEvents': true, 'maxResults': 5, 'orderBy': 'startTime' });
+                const evs = response.result.items || [];
+                const calUI = document.getElementById('calendarContainer');
+                if(evs.length===0){ calUI.innerHTML = `<p class="text-sm font-bold text-slate-500 text-center py-2">予定なし</p>`; return; }
+                calUI.innerHTML = '<ul class="space-y-2">' + evs.map(ev => {
+                    const d = new Date(ev.start.dateTime || ev.start.date);
+                    return `<li class="text-sm flex items-center gap-3 border-b-2 border-slate-200 pb-1 last:border-0 last:pb-0"><span class="font-extrabold text-indigo-700 whitespace-nowrap">${d.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })} ${!ev.start.dateTime?'終日':d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span><span class="font-bold text-slate-800 truncate">${escapeHtml(ev.summary)}</span></li>`;
+                }).join('') + '</ul>';
+            } catch (err) { console.error(err); }
+        }
+
+        // Export CSV
+        document.getElementById('exportCsvBtn').onclick = () => {
+            if (logsData.length === 0) return;
+            const content = [ ['日時', 'カテゴリ', '内容'].join(','), ...logsData.map(log => [log.createdAt?new Date(log.createdAt.toMillis()).toLocaleString('ja-JP'):'N/A', logTypes[log.type]?.label||'その他', `"${(log.text||'').replace(/"/g, '""')}"`].join(',')) ].join('\n');
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), content], { type: 'text/csv;charset=utf-8;' }));
+            link.download = `Log_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
+
+        // Export Docs
+        document.getElementById('exportDocsBtn').onclick = async () => {
+            if (logsData.length === 0 || !isCalAuthorized) { alert("認証とデータが必要です"); return; }
+            try {
+                const res = await window.gapi.client.docs.documents.create({ title: `Log_${new Date().toISOString().slice(0,10)}` });
+                const docId = res.result.documentId;
+                const textContent = "【記録】\n\n" + [...logsData].reverse().map(l => `■ [${l.createdAt?new Date(l.createdAt.toMillis()).toLocaleString('ja-JP'):'N/A'}] ${logTypes[l.type]?.label||'他'}\n${l.text}\n\n`).join('');
+                await window.gapi.client.docs.documents.batchUpdate({ documentId: docId, requests: [{ insertText: { location: { index: 1 }, text: textContent } }] });
+                document.getElementById('successLink').href = `https://docs.google.com/document/d/${docId}/edit`;
+                document.getElementById('successLink').textContent = "ここをクリックして開く";
+                document.getElementById('successMsgContainer').classList.remove('hidden');
+            } catch (err) { console.error(err); alert("エラーが発生しました"); }
+        };
+
+        // Start
+        initApp();
+    </script>
+</body>
+</html>
+
