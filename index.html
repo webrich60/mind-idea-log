@@ -6,10 +6,13 @@
     <meta name="robots" content="noindex, nofollow">
     <title>マインド＆アイデア</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- Google APIs -->
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -26,6 +29,7 @@
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900 font-sans flex flex-col selection-bg">
 
+    <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden justify-center items-center p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md border-4 border-slate-800">
             <div class="flex justify-between items-center mb-4">
@@ -54,6 +58,7 @@
         </div>
     </div>
 
+    <!-- Header -->
     <header class="bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-10 border-b-4 border-slate-800 gap-4">
         <h1 class="text-xl md:text-2xl font-extrabold flex items-center gap-2 text-slate-900">
             <i data-lucide="brain" class="text-indigo-600 w-6 h-6 md:w-8 md:h-8"></i>
@@ -75,6 +80,7 @@
         </div>
     </header>
 
+    <!-- Navigation Tabs -->
     <nav class="bg-white border-b-2 border-slate-300 px-4 md:px-8 flex overflow-x-auto">
         <button onclick="switchTab('log')" id="tab-log" class="tab-active flex items-center gap-2 px-4 py-3 min-w-max transition-colors">
             <i data-lucide="edit-3" class="w-5 h-5"></i> 思考の記録
@@ -87,8 +93,12 @@
         </button>
     </nav>
 
+    <!-- Main Content -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 overflow-hidden relative">
         
+        <!-- ========================================== -->
+        <!-- VIEW 1: 思考の記録 -->
+        <!-- ========================================== -->
         <div id="view-log" class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
             <div class="lg:col-span-5 space-y-6 flex flex-col h-[calc(100vh-12rem)] overflow-y-auto pr-2 pb-4">
                 <section class="bg-white p-5 rounded-2xl shadow-md border-4 border-slate-800 flex-shrink-0 relative">
@@ -141,6 +151,9 @@
             </div>
         </div>
 
+        <!-- ========================================== -->
+        <!-- VIEW 2: アプリ集 -->
+        <!-- ========================================== -->
         <div id="view-apps" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
             <div class="lg:col-span-4 space-y-6">
                 <section class="bg-white p-5 rounded-2xl shadow-md border-4 border-slate-800 relative">
@@ -174,6 +187,9 @@
             </div>
         </div>
 
+        <!-- ========================================== -->
+        <!-- VIEW 3: 宝の地図 -->
+        <!-- ========================================== -->
         <div id="view-treasure" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
             <div class="lg:col-span-4 space-y-6">
                 <section class="bg-amber-50 p-5 rounded-2xl shadow-md border-4 border-amber-500 relative">
@@ -183,6 +199,7 @@
                         <div class="grid grid-cols-3 gap-2" id="treasureTypeButtons"></div>
                         <textarea id="treasureInput" required class="w-full p-3 bg-white border-4 border-amber-300 rounded-xl font-bold resize-none h-24 outline-none" placeholder="ここに入力..."></textarea>
                         
+                        <!-- 画像添付エリア -->
                         <div>
                             <label class="block text-sm font-extrabold text-slate-700 mb-1">写真を添付（任意）</label>
                             <input type="file" id="treasureImageInput" accept="image/*" class="w-full text-sm font-bold text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-extrabold file:bg-amber-200 file:text-amber-800 hover:file:bg-amber-300 cursor-pointer">
@@ -209,6 +226,7 @@
 
     </main>
 
+    <!-- JavaScript (Firebase一切不要・ローカル完結＆API連携) -->
     <script>
         // データの初期化 (ブラウザのローカルストレージを使用)
         let logsData = JSON.parse(localStorage.getItem('mind_logs')) || [];
@@ -484,35 +502,75 @@
         // --- フォーム送信処理 (新規作成＆更新) ---
         document.getElementById('logForm').addEventListener('submit', (e) => {
             e.preventDefault(); const text = document.getElementById('logInput').value.trim(); if (!text) return;
+            const btn = document.getElementById('saveLogBtn');
+            const originalHtml = btn.innerHTML;
+            
             if (editingLogId) {
                 logsData = logsData.map(l => l.id === editingLogId ? { ...l, text, type: currentLogType } : l);
                 cancelLogEdit(); 
             } else {
                 logsData.unshift({ id: generateId(), text, type: currentLogType, createdAt: Date.now() });
                 sendToGas({ date: new Date().toISOString(), type: currentLogType, text: text });
-                document.getElementById('logInput').value = ''; document.getElementById('saveLogBtn').disabled = true;
+                document.getElementById('logInput').value = ''; 
             }
             localStorage.setItem('mind_logs', JSON.stringify(logsData));
             renderTimeline();
+            
+            // 保存完了フィードバック
+            btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> <span>保存しました！</span>';
+            btn.classList.replace('bg-indigo-700', 'bg-green-600');
+            btn.classList.replace('hover:bg-indigo-800', 'hover:bg-green-700');
+            btn.classList.replace('border-indigo-900', 'border-green-800');
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.replace('bg-green-600', 'bg-indigo-700');
+                btn.classList.replace('hover:bg-green-700', 'hover:bg-indigo-800');
+                btn.classList.replace('border-green-800', 'border-indigo-900');
+                btn.disabled = true;
+                lucide.createIcons();
+            }, 1500);
         });
 
         document.getElementById('appForm').addEventListener('submit', (e) => {
             e.preventDefault(); const title = document.getElementById('appNameInput').value.trim(), url = document.getElementById('appUrlInput').value.trim(), desc = document.getElementById('appDescInput').value.trim(); if (!title || !url) return;
+            const btn = document.getElementById('saveAppBtn');
+            const originalHtml = btn.innerHTML;
+            
             if (editingAppId) {
                 appsData = appsData.map(a => a.id === editingAppId ? { ...a, title, url, description: desc } : a);
                 cancelAppEdit(); 
             } else {
                 appsData.unshift({ id: generateId(), title, url, description: desc, createdAt: Date.now() });
                 sendToGas({ date: new Date().toISOString(), type: 'app', text: `【${title}】 ${url} : ${desc}` });
-                document.getElementById('appNameInput').value = ''; document.getElementById('appUrlInput').value = ''; document.getElementById('appDescInput').value = ''; document.getElementById('saveAppBtn').disabled = true;
+                document.getElementById('appNameInput').value = ''; document.getElementById('appUrlInput').value = ''; document.getElementById('appDescInput').value = ''; 
             }
             localStorage.setItem('mind_apps', JSON.stringify(appsData));
             renderAppGrid();
+            
+            // 保存完了フィードバック
+            btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> <span>保存しました！</span>';
+            btn.classList.replace('bg-slate-900', 'bg-green-600');
+            btn.classList.replace('hover:bg-slate-800', 'hover:bg-green-700');
+            btn.classList.replace('border-slate-950', 'border-green-800');
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.replace('bg-green-600', 'bg-slate-900');
+                btn.classList.replace('hover:bg-green-700', 'hover:bg-slate-800');
+                btn.classList.replace('border-green-800', 'border-slate-950');
+                btn.disabled = true;
+                lucide.createIcons();
+            }, 1500);
         });
 
         document.getElementById('treasureForm').addEventListener('submit', (e) => {
             e.preventDefault(); const text = document.getElementById('treasureInput').value.trim(); if (!text) return;
             const imgData = currentTreasureBase64Image;
+            const btn = document.getElementById('saveTreasureBtn');
+            const originalHtml = btn.innerHTML;
 
             try {
                 if (editingTreasureId) {
@@ -521,10 +579,26 @@
                 } else {
                     treasuresData.unshift({ id: generateId(), text, type: currentTreasureType, isCompleted: false, createdAt: Date.now(), image: imgData });
                     sendToGas({ date: new Date().toISOString(), type: currentTreasureType, text: text });
-                    document.getElementById('treasureInput').value = ''; clearTreasureImage(); document.getElementById('saveTreasureBtn').disabled = true;
+                    document.getElementById('treasureInput').value = ''; clearTreasureImage(); 
                 }
                 localStorage.setItem('mind_treasures', JSON.stringify(treasuresData));
                 renderTreasureList();
+                
+                // 保存完了フィードバック
+                btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> <span>保存しました！</span>';
+                btn.classList.replace('bg-amber-600', 'bg-green-600');
+                btn.classList.replace('hover:bg-amber-700', 'hover:bg-green-700');
+                btn.classList.replace('border-amber-800', 'border-green-800');
+                lucide.createIcons();
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.replace('bg-green-600', 'bg-amber-600');
+                    btn.classList.replace('hover:bg-green-700', 'hover:bg-amber-700');
+                    btn.classList.replace('border-green-800', 'border-amber-800');
+                    btn.disabled = true;
+                    lucide.createIcons();
+                }, 1500);
             } catch (error) {
                 if(error.name === 'QuotaExceededError') {
                     alert('【エラー】保存容量の上限に達しました。不要な画像を削除してから再度お試しください。');
@@ -583,10 +657,16 @@
                 if (!window.gapi || !window.google) { setTimeout(attemptInit, 500); return; }
                 try {
                     await new Promise(resolve => window.gapi.load('client', resolve));
-                    // apiKeyを削除し、discoveryDocsのみで初期化
-                    await window.gapi.client.init({ discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest','https://docs.googleapis.com/$discovery/rest?version=v1'] });
+                    // 🌟Drive APIのdiscoveryDocsを追加
+                    await window.gapi.client.init({ discoveryDocs: [
+                        'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
+                        'https://docs.googleapis.com/$discovery/rest?version=v1',
+                        'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+                    ]});
                     tokenClient = window.google.accounts.oauth2.initTokenClient({
-                        client_id: settings.calClientId, scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/documents',
+                        client_id: settings.calClientId, 
+                        // 🌟Driveを操作するためのスコープ（権限）を追加
+                        scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive.file',
                         callback: (resp) => { if (resp && resp.access_token) { isCalAuthorized = true; authBtn.classList.add('hidden'); fetchCalendarEvents(); } }
                     });
                 } catch(err) { console.error(err); }
@@ -617,24 +697,73 @@
             link.download = `Log_${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
 
-        // ★エラーメッセージを正確に出し分けるように修正しました
+        // 🌟自動フォルダ作成＆保存機能を実装
         document.getElementById('exportDocsBtn').onclick = async () => {
             if (logsData.length === 0) { 
                 alert("出力する記録データがありません。まずは「思考の記録」を追加してください。"); 
                 return; 
             }
-            if (!isCalAuthorized) { 
-                alert("Docsを作成するために、右上の「連携」ボタンからGoogle認証を完了してください。"); 
+            if (!isCalAuthorized || !window.gapi.client.drive) { 
+                alert("Docsを作成するために、右上の「連携」ボタンからGoogle認証を完了してください。GCPで「Google Drive API」が有効になっていない場合もこのエラーが出ます。"); 
                 return; 
             }
+
+            const folderName = "マインド＆アイデア記録";
+            let folderId = null;
+
             try {
+                // 1. まず「マインド＆アイデア記録」というフォルダが既に存在するか検索する
+                const searchRes = await window.gapi.client.drive.files.list({
+                    q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                    fields: 'files(id, name)',
+                    spaces: 'drive'
+                });
+
+                if (searchRes.result.files && searchRes.result.files.length > 0) {
+                    // 既にフォルダがあればそのIDを使う
+                    folderId = searchRes.result.files[0].id;
+                } else {
+                    // 2. フォルダが存在しなければ、新しく作成する
+                    const createFolderRes = await window.gapi.client.drive.files.create({
+                        resource: {
+                            name: folderName,
+                            mimeType: 'application/vnd.google-apps.folder'
+                        },
+                        fields: 'id'
+                    });
+                    folderId = createFolderRes.result.id;
+                }
+
+                // 3. ドキュメントを作成する（最初はマイドライブ直下に作られる）
                 const res = await window.gapi.client.docs.documents.create({ title: `Mind_Idea_Log_${new Date().toISOString().slice(0,10)}` });
                 const docId = res.result.documentId;
+                
+                // 4. ドキュメントに文字を書き込む
                 const textContent = "【記録データ】\n\n" + [...logsData].reverse().map(l => `■ [${new Date(l.createdAt).toLocaleString('ja-JP')}] ${logTypes[l.type]?.label||'他'}\n${l.text}\n\n`).join('');
                 await window.gapi.client.docs.documents.batchUpdate({ documentId: docId, requests: [{ insertText: { location: { index: 1 }, text: textContent } }] });
-                document.getElementById('successLink').href = `https://docs.google.com/document/d/${docId}/edit`; document.getElementById('successLink').textContent = "ここをクリックしてGoogle Docsを開く";
+
+                // 5. 作成したドキュメントを、専用のフォルダに移動させる
+                const fileRes = await window.gapi.client.drive.files.get({
+                    fileId: docId,
+                    fields: 'parents'
+                });
+                const previousParents = fileRes.result.parents.join(',');
+                await window.gapi.client.drive.files.update({
+                    fileId: docId,
+                    addParents: folderId,
+                    removeParents: previousParents,
+                    fields: 'id, parents'
+                });
+
+                // 画面に成功メッセージとリンクを表示
+                document.getElementById('successLink').href = `https://docs.google.com/document/d/${docId}/edit`; 
+                document.getElementById('successLink').textContent = "ここをクリックしてGoogle Docsを開く";
                 document.getElementById('successMsgContainer').classList.remove('hidden');
-            } catch (err) { console.error(err); alert("Google Docsの作成に失敗しました"); }
+
+            } catch (err) { 
+                console.error(err); 
+                alert("Google Docsの作成、またはフォルダの作成に失敗しました。GCPで「Google Drive API」が有効になっているか再度確認してください。"); 
+            }
         };
 
         document.getElementById('analyzeBtn').onclick = async () => {
