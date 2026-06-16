@@ -19,82 +19,82 @@
     <style>
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
         .selection-bg::selection { background-color: #a5b4fc; }
-        .tab-active { border-bottom-width: 4px; border-color: #f59e0b; color: #d97706; font-weight: 800; background-color: #fef3c7; }
-        .tab-inactive { border-bottom-width: 4px; border-color: transparent; color: #64748b; font-weight: 700; }
-        .tab-inactive:hover { background-color: #f8fafc; border-color: #cbd5e1; }
+        .tab-active { border-bottom-width: 4px; border-color: #d97706; color: #b45309; font-weight: 900; background-color: #fef3c7; }
+        .tab-inactive { border-bottom-width: 4px; border-color: transparent; color: #475569; font-weight: 800; }
+        .tab-inactive:hover { background-color: #f8fafc; border-color: #94a3b8; }
     </style>
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col selection-bg">
+<body class="min-h-screen bg-slate-100 text-slate-900 font-sans flex flex-col selection-bg">
 
     <!-- Settings Modal -->
     <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden justify-center items-center p-4 z-50">
-        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md border-2 border-slate-200 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md border-4 border-slate-800 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-extrabold text-slate-900">システム設定</h3>
-                <button id="closeSettingsBtn" class="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition-colors">
+                <button id="closeSettingsBtn" class="text-slate-600 hover:text-slate-900 bg-slate-200 p-2 rounded-full transition-colors border-2 border-transparent hover:border-slate-400">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             <form id="settingsForm">
                 <div class="mb-4">
-                    <label class="block text-sm font-extrabold text-slate-700 mb-1">GCP Client ID (カレンダー/Docs用)</label>
-                    <input type="text" id="inputClientId" class="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-amber-500 outline-none font-mono text-xs" placeholder="xxxx.apps.googleusercontent.com">
+                    <label class="block text-sm font-extrabold text-slate-800 mb-1">GCP Client ID (カレンダー/Docs用)</label>
+                    <input type="text" id="inputClientId" class="w-full p-3 bg-white border-2 border-slate-400 rounded-xl focus:border-amber-500 outline-none font-mono text-sm font-bold text-slate-900" placeholder="xxxx.apps.googleusercontent.com">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-extrabold text-slate-700 mb-1">GAS Webhook URL (スプレッドシート用)</label>
-                    <input type="text" id="inputGasUrl" class="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-amber-500 outline-none font-mono text-xs" placeholder="https://script.google.com/macros/s/...">
+                    <label class="block text-sm font-extrabold text-slate-800 mb-1">GAS Webhook URL (スプレッドシート用)</label>
+                    <input type="text" id="inputGasUrl" class="w-full p-3 bg-white border-2 border-slate-400 rounded-xl focus:border-amber-500 outline-none font-mono text-sm font-bold text-slate-900" placeholder="https://script.google.com/macros/s/...">
                 </div>
                 <div class="mb-6">
-                    <label class="block text-sm font-extrabold text-slate-700 mb-1">Gemini API Key (AI分析用)</label>
-                    <input type="password" id="inputGeminiKey" class="w-full p-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:border-amber-500 outline-none font-mono text-sm" placeholder="AIzaSy...">
+                    <label class="block text-sm font-extrabold text-slate-800 mb-1">Gemini API Key (AI分析用)</label>
+                    <input type="password" id="inputGeminiKey" class="w-full p-3 bg-white border-2 border-slate-400 rounded-xl focus:border-amber-500 outline-none font-mono text-sm font-bold text-slate-900" placeholder="AIzaSy...">
                 </div>
-                <button type="submit" id="saveSettingsBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-extrabold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
-                    <i data-lucide="save" class="w-4 h-4"></i> 設定を保存する
+                <button type="submit" id="saveSettingsBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 border-b-4 border-slate-950 active:border-b-0 active:translate-y-1">
+                    <i data-lucide="save" class="w-5 h-5"></i> 設定を保存する
                 </button>
             </form>
         </div>
     </div>
 
     <!-- Header -->
-    <header class="bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-40 border-b border-slate-200 gap-4">
-        <h1 class="text-xl md:text-2xl font-extrabold flex items-center gap-2 text-slate-800 tracking-tight">
-            <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
+    <header class="bg-white shadow-md px-6 py-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-40 border-b-4 border-slate-800 gap-4">
+        <h1 class="text-xl md:text-2xl font-black flex items-center gap-2 text-slate-900 tracking-tight">
+            <div class="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-md">
                 <i data-lucide="compass" class="text-white w-5 h-5 md:w-6 md:h-6"></i>
             </div>
             未来へ繋ぐアイデアノート
         </h1>
         <div class="flex flex-wrap items-center justify-center md:justify-end gap-2 w-full md:w-auto">
-            <button id="openSettingsBtn" class="flex items-center gap-1.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg transition-colors">
+            <button id="openSettingsBtn" class="flex items-center gap-1.5 text-sm font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl border-2 border-slate-300 hover:border-slate-400 transition-colors">
                 <i data-lucide="settings" class="w-4 h-4"></i> <span class="hidden sm:inline">設定</span>
             </button>
-            <button id="exportCsvBtn" class="flex items-center gap-1.5 text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-2 rounded-lg transition-colors">
+            <button id="exportCsvBtn" class="flex items-center gap-1.5 text-sm font-extrabold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-4 py-2.5 rounded-xl border-2 border-emerald-300 hover:border-emerald-400 transition-colors">
                 <i data-lucide="download" class="w-4 h-4"></i> <span class="hidden sm:inline">出力</span>
             </button>
-            <button id="exportDocsBtn" class="flex items-center gap-1.5 text-sm font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-lg transition-colors">
+            <button id="exportDocsBtn" class="flex items-center gap-1.5 text-sm font-extrabold text-blue-800 bg-blue-100 hover:bg-blue-200 px-4 py-2.5 rounded-xl border-2 border-blue-300 hover:border-blue-400 transition-colors">
                 <i data-lucide="file-text" class="w-4 h-4"></i> <span class="hidden sm:inline">Docs</span>
             </button>
-            <button id="authCalendarBtn" class="flex items-center gap-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-lg transition-colors shadow-sm">
+            <button id="authCalendarBtn" class="flex items-center gap-1.5 text-sm font-extrabold text-white bg-blue-700 hover:bg-blue-800 px-4 py-2.5 rounded-xl border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 transition-all shadow-sm">
                 <i data-lucide="calendar-check" class="w-4 h-4"></i> <span class="hidden sm:inline">カレンダー</span>
             </button>
         </div>
     </header>
 
     <!-- Navigation Tabs -->
-    <nav class="bg-white border-b border-slate-200 px-4 md:px-8 flex overflow-x-auto z-30 relative shadow-sm">
+    <nav class="bg-white border-b-4 border-slate-300 px-4 md:px-8 flex overflow-x-auto z-30 relative shadow-sm">
         <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-active flex items-center gap-2 px-5 py-3.5 min-w-max transition-colors text-sm">
-            <i data-lucide="layout-dashboard" class="w-4 h-4"></i> ダッシュボード
+            <i data-lucide="layout-dashboard" class="w-5 h-5 stroke-[2.5]"></i> ダッシュボード
         </button>
         <button onclick="switchTab('log')" id="tab-log" class="tab-inactive flex items-center gap-2 px-5 py-3.5 min-w-max transition-colors text-sm">
-            <i data-lucide="edit-3" class="w-4 h-4"></i> 思考の記録
+            <i data-lucide="edit-3" class="w-5 h-5 stroke-[2.5]"></i> 思考の記録
         </button>
         <button onclick="switchTab('apps')" id="tab-apps" class="tab-inactive flex items-center gap-2 px-5 py-3.5 min-w-max transition-colors text-sm">
-            <i data-lucide="briefcase" class="w-4 h-4"></i> アプリ集
+            <i data-lucide="briefcase" class="w-5 h-5 stroke-[2.5]"></i> アプリ集
         </button>
         <button onclick="switchTab('treasure')" id="tab-treasure" class="tab-inactive flex items-center gap-2 px-5 py-3.5 min-w-max transition-colors text-sm">
-            <i data-lucide="map" class="w-4 h-4"></i> 宝の地図
+            <i data-lucide="map" class="w-5 h-5 stroke-[2.5]"></i> 宝の地図
         </button>
     </nav>
 
@@ -102,42 +102,41 @@
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 overflow-hidden relative">
         
         <!-- ========================================== -->
-        <!-- VIEW 0: ダッシュボード (白基調・スマホ最適化＆2種類のAIボタン) -->
+        <!-- VIEW 0: ダッシュボード (枠と文字を濃く) -->
         <!-- ========================================== -->
         <div id="view-dashboard" class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
             
             <!-- 左側：ゆずの司令室 -->
             <div class="lg:col-span-7 flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-11rem)]">
-                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col h-full relative overflow-hidden">
+                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-md border-2 border-slate-800 flex flex-col h-full relative overflow-hidden">
                     
                     <!-- 司令室ヘッダー＆ボタン群 -->
-                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 relative z-10">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-5 gap-4 relative z-10">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-md shrink-0">
-                                <i data-lucide="bot" class="w-6 h-6 md:w-7 md:h-7 text-white"></i>
+                            <div class="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg border-2 border-orange-700 shrink-0">
+                                <i data-lucide="bot" class="w-7 h-7 md:w-8 md:h-8 text-white"></i>
                             </div>
-                            <h2 class="text-lg md:text-xl font-extrabold text-slate-800 tracking-tight">ゆずの司令室</h2>
+                            <h2 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">ゆずの司令室</h2>
                         </div>
                         
-                        <!-- 相談ボタン（人生・ビジネス）スマホで縦並び、PCで横並びに自動調整 -->
-                        <div class="flex flex-col sm:flex-row w-full md:w-auto gap-2">
-                            <button onclick="window.handleAskYuzu('life')" id="analyzeLifeBtn" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 active:translate-y-0.5 text-sm">
-                                <i data-lucide="heart" class="w-4 h-4"></i> <span class="whitespace-nowrap">人生相談</span>
+                        <div class="flex flex-col sm:flex-row w-full md:w-auto gap-3">
+                            <button onclick="window.handleAskYuzu('life')" id="analyzeLifeBtn" class="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-white border-4 border-emerald-600 text-emerald-700 hover:bg-emerald-50 rounded-xl font-extrabold transition-all shadow-sm disabled:opacity-50 active:translate-y-0.5 text-sm">
+                                <i data-lucide="heart" class="w-5 h-5 stroke-[2.5]"></i> <span class="whitespace-nowrap">人生相談</span>
                             </button>
-                            <button onclick="window.handleAskYuzu('business')" id="analyzeBusinessBtn" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl font-bold transition-all shadow-sm disabled:opacity-50 border-b-4 border-orange-700 active:border-b-0 active:translate-y-1 text-sm">
-                                <i data-lucide="briefcase" class="w-4 h-4"></i> <span class="whitespace-nowrap">ビジネス相談</span>
+                            <button onclick="window.handleAskYuzu('business')" id="analyzeBusinessBtn" class="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl font-extrabold transition-all shadow-md disabled:opacity-50 border-b-4 border-orange-800 active:border-b-0 active:translate-y-1 text-sm">
+                                <i data-lucide="briefcase" class="w-5 h-5 stroke-[2.5]"></i> <span class="whitespace-nowrap">ビジネス相談</span>
                             </button>
                         </div>
                     </div>
                     
                     <!-- 結果表示エリア -->
-                    <div class="flex-1 bg-slate-50 rounded-2xl p-4 md:p-6 overflow-y-auto border border-slate-100 relative z-10 shadow-inner" id="analysisResultContainer">
-                        <div class="h-full flex flex-col items-center justify-center text-slate-400 font-bold text-sm text-center px-4">
-                            <i data-lucide="brain" class="w-10 h-10 md:w-12 h-12 mb-3 opacity-40"></i>
+                    <div class="flex-1 bg-slate-50 rounded-2xl p-4 md:p-6 overflow-y-auto border-2 border-slate-300 relative z-10 shadow-inner" id="analysisResultContainer">
+                        <div class="h-full flex flex-col items-center justify-center text-slate-500 font-extrabold text-sm md:text-base text-center px-4">
+                            <i data-lucide="brain" class="w-12 h-12 md:w-16 md:h-16 mb-4 opacity-50 stroke-[2]"></i>
                             <p class="leading-relaxed">
-                                上のボタンから、今のあなたに必要な相談を選んでください。<br><br>
-                                <span class="text-emerald-600 font-extrabold">【人生相談】</span> 過去の経験をもとに、温かく心を整理します。<br>
-                                <span class="text-orange-500 font-extrabold">【ビジネス相談】</span> マーケティングや集客視点で、<br>結果にこだわる辛口コンサルを行います。
+                                上のボタンから、今のあなたに必要な相談を選んでくれ。<br><br>
+                                <span class="text-emerald-700 font-black">【人生相談】</span> 過去の経験をもとに、温かく心を整理するぞ。<br>
+                                <span class="text-orange-600 font-black">【ビジネス相談】</span> マーケティングや集客視点で、<br>結果にこだわる辛口コンサルを行うぞ。
                             </p>
                         </div>
                     </div>
@@ -147,31 +146,31 @@
             <!-- 右側：目標とスケジュール -->
             <div class="lg:col-span-5 flex flex-col gap-6 h-[calc(100vh-12rem)] md:h-[calc(100vh-11rem)] overflow-y-auto pb-4 pr-1">
                 <!-- 現在の目標 -->
-                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-200 flex-shrink-0">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-base md:text-lg font-extrabold text-slate-800 flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center border border-blue-100">
-                                <i data-lucide="target" class="w-4 h-4 text-blue-600"></i>
+                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-md border-2 border-slate-800 flex-shrink-0">
+                    <div class="flex items-center justify-between mb-5">
+                        <h2 class="text-lg md:text-xl font-black text-slate-900 flex items-center gap-2">
+                            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center border-2 border-blue-300">
+                                <i data-lucide="target" class="w-6 h-6 text-blue-700 stroke-[2.5]"></i>
                             </div>
                             現在の目標
                         </h2>
-                        <button onclick="toggleEditGoals()" id="editGoalsBtn" class="text-slate-400 hover:text-blue-600 p-2 bg-slate-50 hover:bg-blue-50 rounded-lg transition-colors">
-                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                        <button onclick="toggleEditGoals()" id="editGoalsBtn" class="text-slate-500 hover:text-blue-700 p-2 bg-slate-100 hover:bg-blue-100 border-2 border-slate-300 hover:border-blue-300 rounded-lg transition-colors">
+                            <i data-lucide="edit-2" class="w-5 h-5 stroke-[2.5]"></i>
                         </button>
                     </div>
                     <div id="goalsContainer"></div>
                 </section>
 
                 <!-- スケジュール -->
-                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-200 flex-1 flex flex-col">
-                    <h2 class="text-base md:text-lg font-extrabold text-slate-800 flex items-center gap-2 mb-4">
-                        <div class="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-200">
-                            <i data-lucide="calendar" class="w-4 h-4 text-slate-600"></i>
+                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-md border-2 border-slate-800 flex-1 flex flex-col">
+                    <h2 class="text-lg md:text-xl font-black text-slate-900 flex items-center gap-2 mb-5">
+                        <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center border-2 border-slate-300">
+                            <i data-lucide="calendar" class="w-6 h-6 text-slate-700 stroke-[2.5]"></i>
                         </div>
                         直近のスケジュール
                     </h2>
-                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex-1 overflow-y-auto" id="calendarContainer">
-                        <p class="text-xs font-bold text-slate-400 text-center py-6">右上の「カレンダー」ボタンから<br>Googleカレンダーを連携してください。</p>
+                    <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-4 flex-1 overflow-y-auto" id="calendarContainer">
+                        <p class="text-sm font-extrabold text-slate-500 text-center py-6">右上の「カレンダー」ボタンから<br>Googleカレンダーを連携してください。</p>
                     </div>
                 </section>
             </div>
@@ -182,26 +181,26 @@
         <!-- ========================================== -->
         <div id="view-log" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
             <div class="lg:col-span-4 space-y-6 flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-11rem)] overflow-y-auto pb-4 pr-1">
-                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-200 flex-shrink-0 relative">
-                    <button id="cancelLogEditBtn" onclick="cancelLogEdit()" class="hidden absolute top-4 right-4 text-xs font-bold text-slate-500 hover:text-red-500 bg-slate-100 px-2 py-1 rounded">キャンセル</button>
-                    <h2 id="logFormTitle" class="text-lg font-extrabold mb-5 text-slate-800 flex items-center gap-2">今の状態を記録する</h2>
+                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-md border-2 border-slate-800 flex-shrink-0 relative">
+                    <button id="cancelLogEditBtn" onclick="cancelLogEdit()" class="hidden absolute top-4 right-4 text-xs font-black text-slate-600 hover:text-red-600 bg-slate-200 border-2 border-slate-300 hover:border-red-400 px-3 py-1.5 rounded-lg">キャンセル</button>
+                    <h2 id="logFormTitle" class="text-xl font-black mb-5 text-slate-900 flex items-center gap-2">今の状態を記録する</h2>
                     <form id="logForm">
-                        <div class="grid grid-cols-2 gap-3 mb-4" id="typeButtons"></div>
-                        <textarea id="logInput" placeholder="アイデアの種、今の気分、ふと考えたこと..." class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-400 font-medium resize-none h-32 mb-4 outline-none transition-colors text-sm"></textarea>
-                        <button type="submit" id="saveLogBtn" disabled class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 text-sm">
-                            <i data-lucide="send" class="w-4 h-4"></i> <span id="saveLogBtnText">記録を残す</span>
+                        <div class="grid grid-cols-2 gap-3 mb-5" id="typeButtons"></div>
+                        <textarea id="logInput" placeholder="アイデアの種、今の気分、ふと考えたこと..." class="w-full p-4 bg-white border-2 border-slate-400 rounded-xl focus:border-amber-500 font-bold text-slate-900 resize-none h-32 mb-4 outline-none transition-colors text-base shadow-inner"></textarea>
+                        <button type="submit" id="saveLogBtn" disabled class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors disabled:opacity-50 text-base border-b-4 border-slate-950 active:border-b-0 active:translate-y-1">
+                            <i data-lucide="send" class="w-5 h-5 stroke-[2.5]"></i> <span id="saveLogBtnText">記録を残す</span>
                         </button>
                     </form>
                 </section>
             </div>
 
             <div class="lg:col-span-8 flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-11rem)] pb-4">
-                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
-                    <h2 class="text-lg font-extrabold mb-4 text-slate-800 border-b border-slate-100 pb-3 flex justify-between items-center">
+                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-md border-2 border-slate-800 flex-1 flex flex-col overflow-hidden">
+                    <h2 class="text-xl font-black mb-5 text-slate-900 border-b-4 border-slate-200 pb-3 flex justify-between items-center">
                         <span>履歴タイムライン</span>
-                        <span id="logCount" class="text-xs bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold">0件</span>
+                        <span id="logCount" class="text-sm bg-slate-200 px-4 py-1.5 rounded-full text-slate-800 font-black border-2 border-slate-300">0件</span>
                     </h2>
-                    <div class="flex-1 overflow-y-auto pr-2 space-y-4" id="timelineContainer"></div>
+                    <div class="flex-1 overflow-y-auto pr-2 space-y-5" id="timelineContainer"></div>
                 </section>
             </div>
         </div>
@@ -211,32 +210,32 @@
         <!-- ========================================== -->
         <div id="view-apps" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
             <div class="lg:col-span-4 space-y-6 flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-11rem)] overflow-y-auto pb-4 pr-1">
-                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-200 relative">
-                    <button id="cancelAppEditBtn" onclick="cancelAppEdit()" class="hidden absolute top-4 right-4 text-xs font-bold text-slate-500 hover:text-red-500 bg-slate-100 px-2 py-1 rounded">キャンセル</button>
-                    <h2 id="appFormTitle" class="text-lg font-extrabold mb-5 text-slate-800 flex items-center gap-2">新しいアプリを登録</h2>
+                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-md border-2 border-slate-800 relative">
+                    <button id="cancelAppEditBtn" onclick="cancelAppEdit()" class="hidden absolute top-4 right-4 text-xs font-black text-slate-600 hover:text-red-600 bg-slate-200 border-2 border-slate-300 hover:border-red-400 px-3 py-1.5 rounded-lg">キャンセル</button>
+                    <h2 id="appFormTitle" class="text-xl font-black mb-5 text-slate-900 flex items-center gap-2">新しいアプリを登録</h2>
                     <form id="appForm">
-                        <div class="space-y-4">
+                        <div class="space-y-5">
                             <div>
-                                <label class="block text-xs font-extrabold text-slate-500 mb-1">アプリ名</label>
-                                <input type="text" id="appNameInput" required class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-400 font-medium outline-none text-sm">
+                                <label class="block text-sm font-black text-slate-700 mb-1.5">アプリ名</label>
+                                <input type="text" id="appNameInput" required class="w-full p-3 bg-white border-2 border-slate-400 rounded-xl focus:border-amber-500 font-bold text-slate-900 outline-none text-base">
                             </div>
                             <div>
-                                <label class="block text-xs font-extrabold text-slate-500 mb-1">ステータス</label>
-                                <select id="appStatusInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-400 font-bold outline-none cursor-pointer text-sm text-slate-700">
+                                <label class="block text-sm font-black text-slate-700 mb-1.5">ステータス</label>
+                                <select id="appStatusInput" class="w-full p-3 bg-white border-2 border-slate-400 rounded-xl focus:border-amber-500 font-bold text-slate-900 outline-none cursor-pointer text-base">
                                     <option value="idea">💡 アイデア段階</option>
                                     <option value="in-progress">⚙️ 開発中/学習中</option>
                                     <option value="completed">🚀 リリース済/完成</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-extrabold text-slate-500 mb-1">URL (リンク)</label>
-                                <input type="url" id="appUrlInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-amber-400 font-medium outline-none text-sm" placeholder="https:// (任意)">
+                                <label class="block text-sm font-black text-slate-700 mb-1.5">URL (リンク)</label>
+                                <input type="url" id="appUrlInput" class="w-full p-3 bg-white border-2 border-slate-400 rounded-xl focus:border-amber-500 font-bold text-slate-900 outline-none text-sm font-mono" placeholder="https:// (任意)">
                             </div>
                             <div>
-                                <label class="block text-xs font-extrabold text-slate-500 mb-1">詳細・ビジネスへの貢献</label>
-                                <textarea id="appDescInput" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium resize-none h-24 outline-none focus:border-amber-400 text-sm" placeholder="どうマネタイズに繋げるか等"></textarea>
+                                <label class="block text-sm font-black text-slate-700 mb-1.5">詳細・ビジネスへの貢献</label>
+                                <textarea id="appDescInput" class="w-full p-3 bg-white border-2 border-slate-400 rounded-xl font-bold text-slate-900 resize-none h-28 outline-none focus:border-amber-500 text-sm" placeholder="どうマネタイズに繋げるか等"></textarea>
                             </div>
-                            <button type="submit" id="saveAppBtn" disabled class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-4 rounded-xl transition-colors disabled:opacity-50 text-sm mt-2">
+                            <button type="submit" id="saveAppBtn" disabled class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3.5 px-4 rounded-xl transition-colors border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 disabled:opacity-50 text-base mt-2">
                                 <span id="saveAppBtnText">格納する</span>
                             </button>
                         </div>
@@ -244,12 +243,12 @@
                 </section>
             </div>
             <div class="lg:col-span-8 flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-11rem)] pb-4">
-                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
-                    <h2 class="text-lg font-extrabold mb-4 text-slate-800 border-b border-slate-100 pb-3 flex justify-between items-center">
+                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-md border-2 border-slate-800 flex-1 flex flex-col overflow-hidden">
+                    <h2 class="text-xl font-black mb-5 text-slate-900 border-b-4 border-slate-200 pb-3 flex justify-between items-center">
                         <span>マイ・アプリコレクション</span>
-                        <span id="appCount" class="text-xs bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-bold">0個</span>
+                        <span id="appCount" class="text-sm bg-slate-200 px-4 py-1.5 rounded-full text-slate-800 font-black border-2 border-slate-300">0個</span>
                     </h2>
-                    <div class="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4 content-start pr-2" id="appGridContainer"></div>
+                    <div class="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-5 content-start pr-2" id="appGridContainer"></div>
                 </section>
             </div>
         </div>
@@ -259,26 +258,26 @@
         <!-- ========================================== -->
         <div id="view-treasure" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
             <div class="lg:col-span-4 space-y-6 flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-11rem)] overflow-y-auto pb-4 pr-1">
-                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-amber-200 relative">
-                    <button id="cancelTreasureEditBtn" onclick="cancelTreasureEdit()" class="hidden absolute top-4 right-4 text-xs font-bold text-slate-500 hover:text-red-500 bg-slate-50 px-2 py-1 rounded">キャンセル</button>
-                    <h2 id="treasureFormTitle" class="text-lg font-extrabold mb-5 text-amber-800 flex items-center gap-2">宝の地図に書き込む</h2>
-                    <form id="treasureForm" class="space-y-4">
-                        <div class="grid grid-cols-3 gap-2" id="treasureTypeButtons"></div>
-                        <textarea id="treasureInput" required class="w-full p-4 bg-amber-50/50 border border-amber-200 rounded-xl font-medium resize-none h-28 outline-none focus:border-amber-400 text-sm" placeholder="ここに入力..."></textarea>
+                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-md border-2 border-amber-500 relative">
+                    <button id="cancelTreasureEditBtn" onclick="cancelTreasureEdit()" class="hidden absolute top-4 right-4 text-xs font-black text-slate-600 hover:text-red-600 bg-slate-200 border-2 border-slate-300 hover:border-red-400 px-3 py-1.5 rounded-lg">キャンセル</button>
+                    <h2 id="treasureFormTitle" class="text-xl font-black mb-5 text-amber-800 flex items-center gap-2">宝の地図に書き込む</h2>
+                    <form id="treasureForm" class="space-y-5">
+                        <div class="grid grid-cols-3 gap-3" id="treasureTypeButtons"></div>
+                        <textarea id="treasureInput" required class="w-full p-4 bg-amber-50/50 border-2 border-amber-400 rounded-xl font-bold text-slate-900 resize-none h-32 outline-none focus:border-amber-600 text-base" placeholder="ここに入力..."></textarea>
                         
                         <!-- 画像添付エリア -->
-                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                            <label class="block text-xs font-extrabold text-slate-500 mb-2">写真を添付（任意）</label>
-                            <input type="file" id="treasureImageInput" accept="image/*" class="w-full text-xs font-bold text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-extrabold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer">
-                            <div id="treasureImagePreview" class="hidden mt-3 relative inline-block">
-                                <img id="treasureImgElement" src="" class="max-h-32 rounded-lg object-cover border-2 border-amber-200 shadow-sm">
-                                <button type="button" onclick="clearTreasureImage()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-sm">
-                                    <i data-lucide="x" class="w-3 h-3 stroke-[3]"></i>
+                        <div class="bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
+                            <label class="block text-sm font-black text-slate-700 mb-2">写真を添付（任意）</label>
+                            <input type="file" id="treasureImageInput" accept="image/*" class="w-full text-xs font-extrabold text-slate-700 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-amber-200 file:text-amber-900 hover:file:bg-amber-300 cursor-pointer">
+                            <div id="treasureImagePreview" class="hidden mt-4 relative inline-block">
+                                <img id="treasureImgElement" src="" class="max-h-32 rounded-lg object-cover border-4 border-amber-300 shadow-sm">
+                                <button type="button" onclick="clearTreasureImage()" class="absolute -top-3 -right-3 bg-red-600 text-white rounded-full p-1.5 hover:bg-red-700 shadow-md border-2 border-white">
+                                    <i data-lucide="x" class="w-4 h-4 stroke-[3]"></i>
                                 </button>
                             </div>
                         </div>
 
-                        <button type="submit" id="saveTreasureBtn" disabled class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold py-3 px-4 rounded-xl transition-all disabled:opacity-50 text-sm mt-2 shadow-sm">
+                        <button type="submit" id="saveTreasureBtn" disabled class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-extrabold py-3.5 px-4 rounded-xl transition-all disabled:opacity-50 text-base mt-2 shadow-md border-b-4 border-orange-800 active:border-b-0 active:translate-y-1">
                             <span id="saveTreasureBtnText">地図に刻む</span>
                         </button>
                     </form>
@@ -286,9 +285,9 @@
             </div>
             
             <div class="lg:col-span-8 flex flex-col h-[calc(100vh-12rem)] md:h-[calc(100vh-11rem)] pb-4">
-                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
-                    <h2 class="text-lg font-extrabold mb-4 text-slate-800 border-b border-slate-100 pb-3">宝の地図（野望とアクション）</h2>
-                    <div class="flex-1 overflow-y-auto space-y-4 pr-2" id="treasureListContainer"></div>
+                <section class="bg-white p-5 md:p-6 rounded-3xl shadow-md border-2 border-slate-800 flex-1 flex flex-col overflow-hidden">
+                    <h2 class="text-xl font-black mb-5 text-slate-900 border-b-4 border-slate-200 pb-3">宝の地図（野望とアクション）</h2>
+                    <div class="flex-1 overflow-y-auto space-y-6 pr-2" id="treasureListContainer"></div>
                 </section>
             </div>
         </div>
@@ -348,23 +347,23 @@
 
         // カテゴリの定義
         const logTypes = {
-            idea: { label: 'アイデア', icon: 'lightbulb', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
-            emotion: { label: '感情', icon: 'heart', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
-            thought: { label: '思考', icon: 'brain', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-            other: { label: 'その他', icon: 'file-text', color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200' }
+            idea: { label: 'アイデア', icon: 'lightbulb', color: 'text-amber-800', bg: 'bg-amber-100', border: 'border-amber-400' },
+            emotion: { label: '感情', icon: 'heart', color: 'text-rose-800', bg: 'bg-rose-100', border: 'border-rose-400' },
+            thought: { label: '思考', icon: 'brain', color: 'text-blue-800', bg: 'bg-blue-100', border: 'border-blue-400' },
+            other: { label: 'その他', icon: 'file-text', color: 'text-slate-800', bg: 'bg-slate-200', border: 'border-slate-400' }
         };
 
         const treasureTypes = {
-            do: { label: 'やりたい事', icon: 'zap', color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200' },
-            go: { label: '行きたい場所', icon: 'plane', color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200' },
-            want: { label: '欲しいもの', icon: 'gift', color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' }
+            do: { label: 'やりたい事', icon: 'zap', color: 'text-rose-700', bg: 'bg-rose-100', border: 'border-rose-400' },
+            go: { label: '行きたい場所', icon: 'plane', color: 'text-blue-700', bg: 'bg-blue-100', border: 'border-blue-400' },
+            want: { label: '欲しいもの', icon: 'gift', color: 'text-amber-700', bg: 'bg-amber-100', border: 'border-amber-400' }
         };
 
         const getAppStatusConfig = (status) => {
             switch(status) {
-                case 'completed': return { label: 'リリース済/完成', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
-                case 'in-progress': return { label: '開発中/学習中', cls: 'bg-blue-50 text-blue-700 border-blue-200' };
-                default: return { label: 'アイデア段階', cls: 'bg-purple-50 text-purple-700 border-purple-200' };
+                case 'completed': return { label: 'リリース済/完成', cls: 'bg-emerald-100 text-emerald-800 border-emerald-400' };
+                case 'in-progress': return { label: '開発中/学習中', cls: 'bg-blue-100 text-blue-800 border-blue-400' };
+                default: return { label: 'アイデア段階', cls: 'bg-purple-100 text-purple-800 border-purple-400' };
             }
         };
 
@@ -442,32 +441,32 @@
                 container.innerHTML = `
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">人生の目標</label>
-                            <textarea id="inputGoalLife" class="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-blue-400 font-medium text-sm h-24 outline-none resize-none transition-colors">${escapeHtml(goalsData.life)}</textarea>
+                            <label class="block text-sm font-black text-slate-700 mb-2 ml-1">人生の目標</label>
+                            <textarea id="inputGoalLife" class="w-full p-3 border-2 border-slate-400 rounded-xl focus:border-blue-500 font-bold text-slate-900 text-sm h-28 outline-none resize-none transition-colors">${escapeHtml(goalsData.life)}</textarea>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 mb-1.5 ml-1">収入目標</label>
-                            <input id="inputGoalIncome" type="text" class="w-full p-3 border-2 border-slate-200 rounded-xl focus:border-blue-400 font-medium text-sm outline-none transition-colors" value="${escapeHtml(goalsData.income)}">
+                            <label class="block text-sm font-black text-slate-700 mb-2 ml-1">収入目標</label>
+                            <input id="inputGoalIncome" type="text" class="w-full p-3 border-2 border-slate-400 rounded-xl focus:border-blue-500 font-bold text-slate-900 text-sm outline-none transition-colors" value="${escapeHtml(goalsData.income)}">
                         </div>
                     </div>
                 `;
                 const btn = document.getElementById('editGoalsBtn');
-                if (btn) btn.innerHTML = '<i data-lucide="save" class="w-4 h-4 text-emerald-600"></i>';
+                if (btn) btn.innerHTML = '<i data-lucide="save" class="w-5 h-5 text-emerald-600 stroke-[2.5]"></i>';
             } else {
                 container.innerHTML = `
-                    <div class="space-y-4">
-                        <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
-                            <h4 class="text-[10px] font-extrabold text-blue-500 mb-1.5 uppercase tracking-wider">人生の目標</h4>
-                            <p class="text-sm font-bold text-slate-800 leading-relaxed">${escapeHtml(goalsData.life)}</p>
+                    <div class="space-y-5">
+                        <div class="bg-blue-50 p-5 rounded-2xl border-2 border-blue-200 shadow-sm">
+                            <h4 class="text-xs font-black text-blue-700 mb-2 uppercase tracking-wider">人生の目標</h4>
+                            <p class="text-base font-bold text-slate-900 leading-relaxed">${escapeHtml(goalsData.life)}</p>
                         </div>
-                        <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
-                            <h4 class="text-[10px] font-extrabold text-amber-600 mb-1.5 uppercase tracking-wider">収入目標</h4>
-                            <p class="text-sm font-extrabold text-amber-700">${escapeHtml(goalsData.income)}</p>
+                        <div class="bg-amber-50 p-5 rounded-2xl border-2 border-amber-300 shadow-sm">
+                            <h4 class="text-xs font-black text-amber-700 mb-2 uppercase tracking-wider">収入目標</h4>
+                            <p class="text-base font-black text-amber-800">${escapeHtml(goalsData.income)}</p>
                         </div>
                     </div>
                 `;
                 const btn = document.getElementById('editGoalsBtn');
-                if (btn) btn.innerHTML = '<i data-lucide="edit-2" class="w-4 h-4"></i>';
+                if (btn) btn.innerHTML = '<i data-lucide="edit-2" class="w-5 h-5 stroke-[2.5]"></i>';
             }
             lucide.createIcons();
         }
@@ -479,8 +478,8 @@
             container.innerHTML = '';
             for (const [key, t] of Object.entries(logTypes)) {
                 const isSel = currentLogType === key;
-                const cls = isSel ? `${t.bg} border-2 ${t.border} ${t.color} shadow-sm` : `border border-slate-200 bg-white text-slate-500 hover:bg-slate-50`;
-                container.innerHTML += `<button type="button" onclick="currentLogType='${key}'; renderLogTypeButtons();" class="flex flex-col items-center justify-center p-2 rounded-xl transition-all font-bold ${cls}"><i data-lucide="${t.icon}" class="w-4 h-4 mb-1 ${isSel ? 'stroke-[2.5]' : ''}"></i><span class="text-[10px]">${t.label}</span></button>`;
+                const cls = isSel ? `${t.bg} border-4 ${t.border} ${t.color} shadow-md` : `border-2 border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:border-slate-400`;
+                container.innerHTML += `<button type="button" onclick="currentLogType='${key}'; renderLogTypeButtons();" class="flex flex-col items-center justify-center p-3 rounded-xl transition-all font-black ${cls}"><i data-lucide="${t.icon}" class="w-6 h-6 mb-1.5 ${isSel ? 'stroke-[3]' : 'stroke-[2]'}"></i><span class="text-xs">${t.label}</span></button>`;
             }
             lucide.createIcons();
         }
@@ -491,8 +490,8 @@
             container.innerHTML = '';
             for (const [key, t] of Object.entries(treasureTypes)) {
                 const isSel = currentTreasureType === key;
-                const cls = isSel ? `${t.bg} border-2 ${t.border} ${t.color} shadow-sm` : `border border-slate-200 bg-white text-slate-500 hover:bg-slate-50`;
-                container.innerHTML += `<button type="button" onclick="currentTreasureType='${key}'; renderTreasureTypeButtons();" class="flex flex-col items-center justify-center p-2 rounded-xl transition-all font-bold ${cls}"><i data-lucide="${t.icon}" class="w-4 h-4 mb-1 ${isSel ? 'stroke-[2.5]' : ''}"></i><span class="text-[10px]">${t.label}</span></button>`;
+                const cls = isSel ? `${t.bg} border-4 ${t.border} ${t.color} shadow-md` : `border-2 border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:border-slate-400`;
+                container.innerHTML += `<button type="button" onclick="currentTreasureType='${key}'; renderTreasureTypeButtons();" class="flex flex-col items-center justify-center p-3 rounded-xl transition-all font-black ${cls}"><i data-lucide="${t.icon}" class="w-5 h-5 mb-1.5 ${isSel ? 'stroke-[3]' : 'stroke-[2]'}"></i><span class="text-xs">${t.label}</span></button>`;
             }
             lucide.createIcons();
         }
@@ -504,23 +503,23 @@
             
             if (!container) return;
             if (logsData.length === 0) {
-                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 font-bold"><i data-lucide="file-text" class="w-12 h-12 mb-2 opacity-30"></i><p>まだ記録がありません</p></div>`; lucide.createIcons(); return;
+                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 font-extrabold"><i data-lucide="file-text" class="w-12 h-12 mb-3 opacity-40"></i><p>まだ記録がありません</p></div>`; lucide.createIcons(); return;
             }
             container.innerHTML = logsData.map(log => {
                 const t = logTypes[log.type] || logTypes.other;
                 const d = new Date(log.createdAt).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                return `<div class="p-4 rounded-2xl border border-slate-200 bg-white relative group shadow-sm flex flex-col">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="flex items-center gap-1.5 text-[11px] font-extrabold px-2 py-0.5 rounded-md ${t.bg} ${t.color} border ${t.border}"><i data-lucide="${t.icon}" class="w-3 h-3 stroke-[2.5]"></i>${t.label}</div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-[10px] text-slate-400 font-bold font-mono">${d}</span>
+                return `<div class="p-5 rounded-2xl border-2 border-slate-300 bg-white relative group shadow-sm flex flex-col hover:border-slate-400 transition-colors">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-1.5 text-xs font-black px-2.5 py-1 rounded-md ${t.bg} ${t.color} border-2 ${t.border}"><i data-lucide="${t.icon}" class="w-4 h-4 stroke-[2.5]"></i>${t.label}</div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs text-slate-500 font-bold font-mono">${d}</span>
                             <div class="flex gap-2">
-                                <button onclick="window.editLog('${log.id}')" class="text-slate-400 hover:text-indigo-600" title="編集"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                                <button onclick="window.deleteLog('${log.id}')" class="text-slate-400 hover:text-red-600" title="削除"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                <button onclick="window.editLog('${log.id}')" class="text-slate-400 hover:text-indigo-600 bg-slate-100 p-1.5 rounded-lg border border-transparent hover:border-indigo-300 transition-all" title="編集"><i data-lucide="pencil" class="w-4 h-4 stroke-[2.5]"></i></button>
+                                <button onclick="window.deleteLog('${log.id}')" class="text-slate-400 hover:text-red-600 bg-slate-100 p-1.5 rounded-lg border border-transparent hover:border-red-300 transition-all" title="削除"><i data-lucide="trash-2" class="w-4 h-4 stroke-[2.5]"></i></button>
                             </div>
                         </div>
                     </div>
-                    <p class="text-slate-800 font-medium whitespace-pre-wrap leading-relaxed text-sm">${escapeHtml(log.text)}</p>
+                    <p class="text-slate-900 font-bold whitespace-pre-wrap leading-relaxed text-base">${escapeHtml(log.text)}</p>
                 </div>`;
             }).join('');
             lucide.createIcons();
@@ -533,22 +532,22 @@
             
             if (!container) return;
             if (appsData.length === 0) {
-                container.innerHTML = `<div class="col-span-full h-40 flex flex-col items-center justify-center text-slate-400 font-bold"><p>格納されたアプリはありません</p></div>`; return;
+                container.innerHTML = `<div class="col-span-full h-40 flex flex-col items-center justify-center text-slate-400 font-extrabold"><p>格納されたアプリはありません</p></div>`; return;
             }
             container.innerHTML = appsData.map(app => {
                 const statusConf = getAppStatusConfig(app.status || 'idea');
-                return `<div class="bg-white border border-slate-200 hover:border-indigo-300 p-5 rounded-2xl relative group flex flex-col transition-colors shadow-sm">
-                    <div class="absolute top-3 right-3 flex gap-2">
-                        <button onclick="window.editApp('${app.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600 bg-slate-50 rounded-lg transition-colors" title="編集"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                        <button onclick="window.deleteApp('${app.id}')" class="p-1.5 text-slate-400 hover:text-red-600 bg-slate-50 rounded-lg transition-colors" title="削除"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                return `<div class="bg-white border-2 border-slate-300 hover:border-indigo-400 p-6 rounded-2xl relative group flex flex-col transition-colors shadow-sm">
+                    <div class="absolute top-4 right-4 flex gap-2">
+                        <button onclick="window.editApp('${app.id}')" class="p-2 text-slate-500 hover:text-indigo-700 bg-slate-100 border border-slate-200 hover:border-indigo-300 rounded-lg transition-colors" title="編集"><i data-lucide="pencil" class="w-4 h-4 stroke-[2.5]"></i></button>
+                        <button onclick="window.deleteApp('${app.id}')" class="p-2 text-slate-500 hover:text-red-600 bg-slate-100 border border-slate-200 hover:border-red-300 rounded-lg transition-colors" title="削除"><i data-lucide="trash-2" class="w-4 h-4 stroke-[2.5]"></i></button>
                     </div>
-                    <div class="mb-3 pr-16">
-                        <span class="inline-block px-2.5 py-1 rounded-md text-[10px] font-bold border ${statusConf.cls}">${statusConf.label}</span>
+                    <div class="mb-4 pr-20">
+                        <span class="inline-block px-3 py-1 rounded-lg text-xs font-black border-2 ${statusConf.cls}">${statusConf.label}</span>
                     </div>
-                    <h3 class="font-extrabold text-slate-800 text-base mb-1 truncate">${escapeHtml(app.title)}</h3>
-                    <p class="text-[11px] text-slate-400 font-mono mb-3 truncate">${escapeHtml(app.url)}</p>
-                    <p class="text-sm font-medium text-slate-600 mb-5 flex-1 line-clamp-3 leading-relaxed">${escapeHtml(app.description)}</p>
-                    ${app.url ? `<a href="${escapeHtml(app.url)}" target="_blank" class="mt-auto w-full bg-slate-50 border border-slate-200 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 font-bold py-2.5 rounded-xl flex justify-center items-center gap-2 text-sm transition-colors text-slate-600"><i data-lucide="external-link" class="w-4 h-4"></i> アプリを開く</a>` : ''}
+                    <h3 class="font-black text-slate-900 text-lg mb-2 truncate">${escapeHtml(app.title)}</h3>
+                    <p class="text-xs text-slate-500 font-mono font-bold mb-4 truncate">${escapeHtml(app.url)}</p>
+                    <p class="text-sm font-bold text-slate-700 mb-6 flex-1 line-clamp-3 leading-relaxed">${escapeHtml(app.description)}</p>
+                    ${app.url ? `<a href="${escapeHtml(app.url)}" target="_blank" class="mt-auto w-full bg-slate-50 border-2 border-slate-300 hover:bg-indigo-50 hover:text-indigo-800 hover:border-indigo-300 font-extrabold py-3 rounded-xl flex justify-center items-center gap-2 text-sm transition-colors text-slate-700"><i data-lucide="external-link" class="w-4 h-4 stroke-[2.5]"></i> アプリを開く</a>` : ''}
                 </div>`
             }).join('');
             lucide.createIcons();
@@ -558,42 +557,42 @@
             const container = document.getElementById('treasureListContainer');
             if (!container) return;
             if (treasuresData.length === 0) {
-                container.innerHTML = `<div class="h-40 flex flex-col items-center justify-center text-slate-400 font-bold"><p>野望やアイデアを書き込んでください</p></div>`; return;
+                container.innerHTML = `<div class="h-40 flex flex-col items-center justify-center text-slate-400 font-extrabold"><p>野望やアイデアを書き込んでください</p></div>`; return;
             }
             const sorted = [...treasuresData].sort((a,b) => { if(a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1; return b.createdAt - a.createdAt; });
             container.innerHTML = sorted.map(t => {
                 const tInfo = treasureTypes[t.type] || treasureTypes.do;
-                const imgHtml = t.image ? `<div class="mt-3"><img src="${t.image}" class="max-h-32 rounded-xl object-cover border border-slate-200 shadow-sm"></div>` : '';
+                const imgHtml = t.image ? `<div class="mt-4"><img src="${t.image}" class="max-h-40 rounded-xl object-cover border-2 border-slate-300 shadow-sm"></div>` : '';
                 const actionsHtml = (t.actions || []).map(act => `
-                    <div class="flex items-start gap-2.5 group/act mb-2">
-                        <button onclick="window.toggleAction('${t.id}', ${act.id})" class="mt-0.5 shrink-0 w-4 h-4 rounded border flex items-center justify-center transition-colors ${act.completed ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 text-transparent hover:border-amber-400'}">
-                            <i data-lucide="check" class="w-3 h-3 stroke-[4]"></i>
+                    <div class="flex items-start gap-3 group/act mb-3">
+                        <button onclick="window.toggleAction('${t.id}', ${act.id})" class="mt-0.5 shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${act.completed ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-400 text-transparent hover:border-amber-400'}">
+                            <i data-lucide="check" class="w-3.5 h-3.5 stroke-[4]"></i>
                         </button>
-                        <span class="text-sm font-bold flex-1 ${act.completed ? 'line-through text-slate-400' : 'text-slate-700'}">${escapeHtml(act.text)}</span>
-                        <button onclick="window.deleteAction('${t.id}', ${act.id})" class="text-slate-400 hover:text-red-500 opacity-0 group-hover/act:opacity-100 transition-opacity"><i data-lucide="x" class="w-4 h-4"></i></button>
+                        <span class="text-sm font-black flex-1 ${act.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(act.text)}</span>
+                        <button onclick="window.deleteAction('${t.id}', ${act.id})" class="text-slate-400 hover:text-red-500 opacity-0 group-hover/act:opacity-100 transition-opacity bg-slate-100 hover:bg-red-50 p-1 rounded"><i data-lucide="x" class="w-4 h-4 stroke-[2.5]"></i></button>
                     </div>
                 `).join('');
 
-                return `<div class="p-5 rounded-3xl border ${t.isCompleted ? 'border-slate-200 opacity-60 bg-slate-50 grayscale' : 'border-slate-200 bg-white shadow-sm'} flex flex-col relative group transition-all">
-                    <div class="flex items-start gap-3.5">
-                        <button onclick="window.toggleTreasure('${t.id}', ${t.isCompleted})" class="flex-shrink-0 w-7 h-7 mt-1 rounded-full border-2 flex items-center justify-center transition-colors ${t.isCompleted ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 text-transparent hover:border-emerald-400 hover:text-emerald-500'}"><i data-lucide="check" class="w-4 h-4 stroke-[3]"></i></button>
-                        <div class="flex-1 min-w-0 pr-16">
-                            <div class="flex items-center gap-1.5 text-[10px] font-extrabold ${t.isCompleted ? 'text-slate-400' : tInfo.color} mb-1.5 uppercase tracking-wider"><i data-lucide="${tInfo.icon}" class="w-3.5 h-3.5 stroke-[2.5]"></i>${tInfo.label}</div>
-                            <p class="font-bold text-base md:text-lg ${t.isCompleted ? 'line-through text-slate-400' : 'text-slate-800'} break-words whitespace-pre-wrap leading-relaxed">${escapeHtml(t.text)}</p>
+                return `<div class="p-6 rounded-3xl border-2 ${t.isCompleted ? 'border-slate-300 opacity-60 bg-slate-50 grayscale' : 'border-slate-300 bg-white shadow-md hover:border-slate-400'} flex flex-col relative group transition-all">
+                    <div class="flex items-start gap-4">
+                        <button onclick="window.toggleTreasure('${t.id}', ${t.isCompleted})" class="flex-shrink-0 w-9 h-9 mt-1 rounded-full border-4 flex items-center justify-center transition-colors ${t.isCompleted ? 'bg-emerald-500 border-emerald-600 text-white' : 'border-slate-300 text-transparent hover:border-emerald-400 hover:text-emerald-500 bg-slate-50 hover:bg-white'}"><i data-lucide="check" class="w-5 h-5 stroke-[4]"></i></button>
+                        <div class="flex-1 min-w-0 pr-20">
+                            <div class="flex items-center gap-1.5 text-[11px] font-black ${t.isCompleted ? 'text-slate-400' : tInfo.color} mb-2 uppercase tracking-wider bg-slate-50 inline-flex px-2.5 py-1 rounded-lg border border-slate-200"><i data-lucide="${tInfo.icon}" class="w-4 h-4 stroke-[2.5]"></i>${tInfo.label}</div>
+                            <p class="font-black text-lg md:text-xl ${t.isCompleted ? 'line-through text-slate-500' : 'text-slate-900'} break-words whitespace-pre-wrap leading-relaxed">${escapeHtml(t.text)}</p>
                             ${imgHtml}
                         </div>
-                        <div class="absolute top-4 right-4 flex gap-2">
-                            <button onclick="window.editTreasure('${t.id}')" class="text-slate-400 hover:text-indigo-600 p-1.5 bg-slate-50 rounded-lg transition-colors" title="編集"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                            <button onclick="window.deleteTreasure('${t.id}')" class="text-slate-400 hover:text-red-600 p-1.5 bg-slate-50 rounded-lg transition-colors" title="削除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <div class="absolute top-5 right-5 flex gap-2">
+                            <button onclick="window.editTreasure('${t.id}')" class="text-slate-500 hover:text-indigo-700 p-2 bg-slate-100 border border-slate-200 hover:border-indigo-300 rounded-lg transition-colors" title="編集"><i data-lucide="pencil" class="w-4 h-4 stroke-[2.5]"></i></button>
+                            <button onclick="window.deleteTreasure('${t.id}')" class="text-slate-500 hover:text-red-600 p-2 bg-slate-100 border border-slate-200 hover:border-red-300 rounded-lg transition-colors" title="削除"><i data-lucide="trash-2" class="w-4 h-4 stroke-[2.5]"></i></button>
                         </div>
                     </div>
                     
-                    <div class="mt-5 pt-4 border-t border-slate-100 md:ml-10">
-                        <h4 class="text-[11px] font-bold text-slate-400 mb-3 flex items-center gap-1.5 uppercase tracking-wider"><i data-lucide="check-square" class="w-3.5 h-3.5"></i> アクション / ToDo</h4>
-                        <div class="mb-4">${actionsHtml}</div>
-                        <div class="flex gap-2 relative">
-                            <input type="text" id="action-input-${t.id}" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-medium focus:border-amber-400 outline-none transition-colors" placeholder="新しいアクションを追加..." onkeypress="if(event.key==='Enter'){ window.addAction('${t.id}'); }">
-                            <button onclick="window.addAction('${t.id}')" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl transition-colors text-sm font-bold absolute right-1.5 top-1.5 bottom-1.5">追加</button>
+                    <div class="mt-6 pt-5 border-t-2 border-slate-200 border-dashed md:ml-12">
+                        <h4 class="text-xs font-black text-slate-500 mb-4 flex items-center gap-1.5 uppercase tracking-wider"><i data-lucide="check-square" class="w-4 h-4 stroke-[2.5]"></i> アクション / ToDo</h4>
+                        <div class="mb-5">${actionsHtml}</div>
+                        <div class="flex gap-3 relative">
+                            <input type="text" id="action-input-${t.id}" class="flex-1 bg-slate-50 border-2 border-slate-300 rounded-xl px-4 py-3 text-sm font-bold focus:border-amber-500 outline-none transition-colors text-slate-900" placeholder="新しいアクションを追加..." onkeypress="if(event.key==='Enter'){ window.addAction('${t.id}'); }">
+                            <button onclick="window.addAction('${t.id}')" class="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-xl transition-colors text-sm font-extrabold border-b-4 border-slate-950 active:border-b-0 active:translate-y-1">追加</button>
                         </div>
                     </div>
                 </div>`;
@@ -805,15 +804,17 @@
             renderTimeline();
             
             if(btn) {
-                btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>保存しました！</span>';
-                btn.classList.replace('bg-slate-800', 'bg-emerald-600');
-                btn.classList.replace('hover:bg-slate-700', 'hover:bg-emerald-500');
+                btn.innerHTML = '<i data-lucide="check" class="w-5 h-5 stroke-[2.5]"></i> <span>保存しました！</span>';
+                btn.classList.replace('bg-slate-900', 'bg-emerald-600');
+                btn.classList.replace('hover:bg-slate-800', 'hover:bg-emerald-500');
+                btn.classList.replace('border-slate-950', 'border-emerald-800');
                 lucide.createIcons();
                 
                 setTimeout(() => {
                     btn.innerHTML = originalHtml;
-                    btn.classList.replace('bg-emerald-600', 'bg-slate-800');
-                    btn.classList.replace('hover:bg-emerald-500', 'hover:bg-slate-700');
+                    btn.classList.replace('bg-emerald-600', 'bg-slate-900');
+                    btn.classList.replace('hover:bg-emerald-500', 'hover:bg-slate-800');
+                    btn.classList.replace('border-emerald-800', 'border-slate-950');
                     btn.disabled = true;
                     lucide.createIcons();
                 }, 1500);
@@ -856,15 +857,17 @@
             renderAppGrid();
             
             if(btn) {
-                btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>保存しました！</span>';
-                btn.classList.replace('bg-slate-800', 'bg-emerald-600');
-                btn.classList.replace('hover:bg-slate-700', 'hover:bg-emerald-500');
+                btn.innerHTML = '<i data-lucide="check" class="w-5 h-5 stroke-[2.5]"></i> <span>保存しました！</span>';
+                btn.classList.replace('bg-slate-900', 'bg-emerald-600');
+                btn.classList.replace('hover:bg-slate-800', 'hover:bg-emerald-500');
+                btn.classList.replace('border-slate-950', 'border-emerald-800');
                 lucide.createIcons();
                 
                 setTimeout(() => {
                     btn.innerHTML = originalHtml;
-                    btn.classList.replace('bg-emerald-600', 'bg-slate-800');
-                    btn.classList.replace('hover:bg-emerald-500', 'hover:bg-slate-700');
+                    btn.classList.replace('bg-emerald-600', 'bg-slate-900');
+                    btn.classList.replace('hover:bg-emerald-500', 'hover:bg-slate-800');
+                    btn.classList.replace('border-emerald-800', 'border-slate-950');
                     btn.disabled = true;
                     lucide.createIcons();
                 }, 1500);
@@ -897,15 +900,17 @@
                 renderTreasureList();
                 
                 if(btn) {
-                    btn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> <span>保存しました！</span>';
+                    btn.innerHTML = '<i data-lucide="check" class="w-5 h-5 stroke-[2.5]"></i> <span>保存しました！</span>';
                     btn.classList.replace('from-amber-500', 'from-emerald-500');
-                    btn.classList.replace('to-orange-500', 'to-emerald-600');
+                    btn.classList.replace('to-orange-600', 'to-emerald-600');
+                    btn.classList.replace('border-orange-800', 'border-emerald-800');
                     lucide.createIcons();
                     
                     setTimeout(() => {
                         btn.innerHTML = originalHtml;
                         btn.classList.replace('from-emerald-500', 'from-amber-500');
-                        btn.classList.replace('to-emerald-600', 'to-orange-500');
+                        btn.classList.replace('to-emerald-600', 'to-orange-600');
+                        btn.classList.replace('border-emerald-800', 'border-orange-800');
                         btn.disabled = true;
                         lucide.createIcons();
                     }, 1500);
@@ -930,7 +935,7 @@
             const saveBtn = document.getElementById('saveSettingsBtn');
             if(saveBtn) {
                 const originalHtml = saveBtn.innerHTML;
-                saveBtn.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> 保存しました！';
+                saveBtn.innerHTML = '<i data-lucide="check" class="w-5 h-5 stroke-[2.5]"></i> 保存しました！';
                 saveBtn.classList.replace('bg-slate-800', 'bg-emerald-600');
                 saveBtn.classList.replace('hover:bg-slate-700', 'hover:bg-emerald-500');
                 lucide.createIcons();
@@ -949,7 +954,6 @@
 
         // --- 全てのイベントリスナーを一括登録する関数 ---
         function setupEventListeners() {
-            // イベントリスナーの多重登録を防ぐため、フォーム等のイベントを設定
             const logForm = document.getElementById('logForm');
             if(logForm && !logForm.dataset.init) {
                 logForm.addEventListener('submit', handleLogSubmit);
@@ -974,7 +978,6 @@
                 settingsForm.dataset.init = 'true';
             }
 
-            // Inputの監視
             document.getElementById('logInput')?.addEventListener('input', e => {
                 const btn = document.getElementById('saveLogBtn');
                 if(btn) btn.disabled = !e.target.value.trim();
@@ -992,7 +995,6 @@
                 if(btn) btn.disabled = !e.target.value.trim();
             });
 
-            // 設定モーダルの開閉
             document.getElementById('openSettingsBtn')?.addEventListener('click', () => {
                 document.getElementById('settingsModal')?.classList.remove('hidden');
             });
@@ -1000,12 +1002,10 @@
                 document.getElementById('settingsModal')?.classList.add('hidden');
             });
 
-            // カレンダー連携ボタン
             document.getElementById('authCalendarBtn')?.addEventListener('click', () => {
                 if (tokenClient) tokenClient.requestAccessToken({ prompt: 'consent' }); 
             });
 
-            // エクスポートボタン（CSV）
             document.getElementById('exportCsvBtn')?.addEventListener('click', () => {
                 if (logsData.length === 0) return;
                 const content = [ ['日時', 'カテゴリ', '内容'].join(','), ...logsData.map(l => [new Date(l.createdAt).toLocaleString('ja-JP'), logTypes[l.type]?.label||'その他', `"${(l.text||'').replace(/"/g, '""')}"`].join(',')) ].join('\n');
@@ -1013,7 +1013,6 @@
                 link.download = `Log_${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
             });
 
-            // エクスポートボタン（Docs）
             document.getElementById('exportDocsBtn')?.addEventListener('click', async () => {
                 if (logsData.length === 0) { alert("出力する記録データがありません。"); return; }
                 if (!isCalAuthorized || !window.gapi.client.drive) { alert("Docsを作成するために、右上の「カレンダー」ボタンからGoogle認証を完了してください。"); return; }
@@ -1052,8 +1051,8 @@
             const authBtn = document.getElementById('authCalendarBtn');
             if(!calUI || !authBtn) return;
 
-            if (!settings.calClientId) { calUI.innerHTML = `<p class="text-xs font-bold text-slate-400 text-center py-6">右上の「設定」から<br>API情報を入力してください。</p>`; authBtn.classList.add('hidden'); return; }
-            if (!isCalAuthorized) { calUI.innerHTML = `<p class="text-xs font-bold text-slate-400 text-center py-6">右上の「カレンダー」ボタンから<br>連携を許可してください。</p>`; authBtn.classList.remove('hidden'); }
+            if (!settings.calClientId) { calUI.innerHTML = `<p class="text-sm font-extrabold text-slate-400 text-center py-6">右上の「設定」から<br>API情報を入力してください。</p>`; authBtn.classList.add('hidden'); return; }
+            if (!isCalAuthorized) { calUI.innerHTML = `<p class="text-sm font-extrabold text-slate-400 text-center py-6">右上の「カレンダー」ボタンから<br>連携を許可してください。</p>`; authBtn.classList.remove('hidden'); }
 
             const attemptInit = async () => {
                 if (!window.gapi || !window.google) { setTimeout(attemptInit, 500); return; }
@@ -1080,10 +1079,10 @@
             try {
                 const response = await window.gapi.client.calendar.events.list({ 'calendarId': 'primary', 'timeMin': (new Date()).toISOString(), 'showDeleted': false, 'singleEvents': true, 'maxResults': 5, 'orderBy': 'startTime' });
                 const evs = response.result.items || [];
-                if(evs.length===0){ calUI.innerHTML = `<p class="text-xs font-bold text-slate-400 text-center py-6">予定なし</p>`; return; }
-                calUI.innerHTML = '<ul class="space-y-2">' + evs.map(ev => {
+                if(evs.length===0){ calUI.innerHTML = `<p class="text-sm font-extrabold text-slate-400 text-center py-6">予定なし</p>`; return; }
+                calUI.innerHTML = '<ul class="space-y-3">' + evs.map(ev => {
                     const d = new Date(ev.start.dateTime || ev.start.date);
-                    return `<li class="text-xs flex items-center gap-3 border-b border-slate-100 pb-2"><span class="font-extrabold text-blue-600 whitespace-nowrap bg-blue-50 px-2 py-1 rounded">${d.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })} ${!ev.start.dateTime?'終日':d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span><span class="font-bold text-slate-700 truncate">${escapeHtml(ev.summary)}</span></li>`;
+                    return `<li class="text-sm flex items-center gap-3 border-b-2 border-slate-200 pb-3"><span class="font-black text-blue-700 whitespace-nowrap bg-blue-100 border-2 border-blue-200 px-2.5 py-1 rounded-lg">${d.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })} ${!ev.start.dateTime?'終日':d.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}</span><span class="font-extrabold text-slate-800 truncate">${escapeHtml(ev.summary)}</span></li>`;
                 }).join('') + '</ul>';
             } catch (err) { console.error(err); }
         }
@@ -1100,7 +1099,7 @@
             if(!btn || !otherBtn || !resContainer) return;
 
             if (!settings.geminiKey) {
-                resContainer.innerHTML = '<p class="text-red-500 font-bold p-4 text-center">※右上の設定から「Gemini API Key」を入力してください。</p>'; 
+                resContainer.innerHTML = '<p class="text-red-600 font-black p-4 text-center border-2 border-red-200 bg-red-50 rounded-xl">※右上の設定から「Gemini API Key」を入力してください。</p>'; 
                 return;
             }
 
@@ -1109,9 +1108,9 @@
             
             const loadingText = isBusiness ? 'ビジネスゆずが分析中...' : 'ゆずが想いを受信中...';
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> <span class="whitespace-nowrap">${loadingText}</span>`;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin stroke-[2.5]"></i> <span class="whitespace-nowrap">${loadingText}</span>`;
             
-            resContainer.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-500 font-bold text-sm"><i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-3 text-amber-500"></i> ${loadingText}</div>`; 
+            resContainer.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-600 font-black text-base"><i data-lucide="loader-2" class="w-12 h-12 md:w-16 md:h-16 animate-spin mb-4 text-amber-500 stroke-[2.5]"></i> ${loadingText}</div>`; 
             lucide.createIcons();
 
             const logsContext = logsData.slice(0, 30).map(l => `[${new Date(l.createdAt).toLocaleString('ja-JP')}] ${logTypes[l.type].label}: ${l.text}`).join('\n\n');
@@ -1188,6 +1187,7 @@ ${logsContext}
             }
 
             const apiKey = settings.geminiKey;
+            // 指定通り gemini-2.5-flash を使用
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
             const payload = { contents: [{ parts: [{ text: `以下の状況を分析し、アドバイスをお願いします。\n\n${context}` }] }], systemInstruction: { parts: [{ text: systemPrompt }] } };
 
@@ -1204,19 +1204,19 @@ ${logsContext}
                 const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '結果の取得に失敗しました。';
                 
                 // 強調表示の色分け（ビジネスはオレンジ、人生はエメラルド）
-                const highlightColor = isBusiness ? 'text-orange-600' : 'text-emerald-600';
+                const highlightColor = isBusiness ? 'text-orange-700 bg-orange-50 border-b-2 border-orange-200' : 'text-emerald-700 bg-emerald-50 border-b-2 border-emerald-200';
                 const formattedText = text.split('\n').map((line) => {
-                    const parsedLine = line.replace(/\*\*(.*?)\*\*/g, `<strong class="${highlightColor} font-extrabold">$1</strong>`);
-                    return `<p class="mb-3 ${line.startsWith('-') ? 'ml-4' : ''}">${parsedLine}</p>`;
+                    const parsedLine = line.replace(/\*\*(.*?)\*\*/g, `<strong class="${highlightColor} font-black px-1 mx-0.5 rounded">$1</strong>`);
+                    return `<p class="mb-4 ${line.startsWith('-') ? 'ml-5' : ''}">${parsedLine}</p>`;
                 }).join('');
 
-                resContainer.innerHTML = `<div class="prose prose-sm md:prose-base max-w-none text-slate-700 font-medium leading-relaxed">${formattedText}</div>`;
+                resContainer.innerHTML = `<div class="prose prose-sm md:prose-base max-w-none text-slate-800 font-extrabold leading-loose tracking-wide">${formattedText}</div>`;
                 
                 const typeLabel = isBusiness ? 'ビジネス相談' : '人生相談';
                 sendToGas({ date: new Date().toLocaleString('ja-JP'), type: `AIコンサル(${typeLabel})`, text: `【ゆずからの${typeLabel}】\n${text}` });
             } catch (err) {
                 console.error(err);
-                resContainer.innerHTML = '<p class="text-red-500 font-bold p-4">API通信エラーが発生しました。設定からAPIキーを確認してください。</p>';
+                resContainer.innerHTML = '<p class="text-red-600 font-black p-4 border-2 border-red-300 bg-red-50 rounded-xl">API通信エラーが発生しました。設定からAPIキーを確認してください。</p>';
             } finally {
                 btn.disabled = false;
                 otherBtn.disabled = false;
