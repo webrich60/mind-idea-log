@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>マインド＆アイデア</title>
-    
+    <title>未来へ繋ぐアイデアノート</title>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- Google APIs -->
+    <!-- Google APIs (カレンダー・Docs連携用) -->
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -30,8 +30,8 @@
 <body class="min-h-screen bg-slate-100 text-slate-900 font-sans flex flex-col selection-bg">
 
     <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden justify-center items-center p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md border-4 border-slate-800">
+    <div id="settingsModal" class="fixed inset-0 bg-slate-900/60 z-50 hidden justify-center items-center p-4 z-50">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md border-4 border-slate-800 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-extrabold text-slate-900">システム設定</h3>
                 <button id="closeSettingsBtn" class="text-slate-500 hover:text-slate-900">
@@ -40,16 +40,16 @@
             </div>
             <form id="settingsForm">
                 <div class="mb-4">
-                    <label class="block text-sm font-extrabold text-slate-900 mb-1">GCP Client ID (カレンダー連携用)</label>
-                    <input type="password" id="inputClientId" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="xxxx.apps.googleusercontent.com">
+                    <label class="block text-sm font-extrabold text-slate-900 mb-1">GCP Client ID (カレンダー/Docs用)</label>
+                    <input type="text" id="inputClientId" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-xs" placeholder="xxxx.apps.googleusercontent.com">
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-extrabold text-slate-900 mb-1">GAS Webhook URL (スプレッドシート保存用)</label>
-                    <input type="password" id="inputGasUrl" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="https://script.google.com/macros/s/...">
+                    <label class="block text-sm font-extrabold text-slate-900 mb-1">GAS Webhook URL (スプレッドシート用)</label>
+                    <input type="text" id="inputGasUrl" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-xs" placeholder="https://script.google.com/macros/s/...">
                 </div>
                 <div class="mb-6">
                     <label class="block text-sm font-extrabold text-slate-900 mb-1">Gemini API Key (AI分析用)</label>
-                    <input type="password" id="inputGeminiKey" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="Gemini API Key...">
+                    <input type="password" id="inputGeminiKey" class="w-full p-2 border-2 border-slate-600 rounded-lg focus:border-indigo-600 outline-none font-mono text-sm" placeholder="AIzaSy...">
                 </div>
                 <button type="submit" id="saveSettingsBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3 px-4 rounded-xl transition-colors flex items-center justify-center gap-2">
                     設定を保存する
@@ -59,14 +59,14 @@
     </div>
 
     <!-- Header -->
-    <header class="bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-10 border-b-4 border-slate-800 gap-4">
+    <header class="bg-white shadow-sm px-6 py-4 flex flex-col md:flex-row justify-between items-center sticky top-0 z-40 border-b-4 border-slate-800 gap-4">
         <h1 class="text-xl md:text-2xl font-extrabold flex items-center gap-2 text-slate-900">
-            <i data-lucide="brain" class="text-indigo-600 w-6 h-6 md:w-8 md:h-8"></i>
-            マインド＆アイデア
+            <i data-lucide="compass" class="text-indigo-600 w-6 h-6 md:w-8 md:h-8"></i>
+            未来へ繋ぐアイデアノート
         </h1>
         <div class="flex items-center gap-3 w-full md:w-auto justify-end">
             <button id="openSettingsBtn" class="flex items-center gap-2 text-sm font-extrabold text-slate-700 bg-slate-100 hover:bg-slate-200 border-2 border-slate-400 px-3 py-2 rounded-lg transition-colors">
-                <i data-lucide="settings" class="w-4 h-4"></i>
+                <i data-lucide="settings" class="w-4 h-4"></i> <span class="hidden md:inline">設定</span>
             </button>
             <button id="exportCsvBtn" class="flex items-center gap-2 text-sm font-extrabold text-indigo-800 bg-indigo-100 hover:bg-indigo-200 border-2 border-indigo-300 px-3 py-2 rounded-lg transition-colors">
                 <i data-lucide="download" class="w-4 h-4"></i> <span class="hidden md:inline">出力</span>
@@ -81,15 +81,18 @@
     </header>
 
     <!-- Navigation Tabs -->
-    <nav class="bg-white border-b-2 border-slate-300 px-4 md:px-8 flex overflow-x-auto">
-        <button onclick="switchTab('log')" id="tab-log" class="tab-active flex items-center gap-2 px-4 py-3 min-w-max transition-colors">
+    <nav class="bg-white border-b-2 border-slate-300 px-4 md:px-8 flex overflow-x-auto z-30 relative">
+        <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-active flex items-center gap-2 px-4 py-3 min-w-max transition-colors">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i> ダッシュボード
+        </button>
+        <button onclick="switchTab('log')" id="tab-log" class="tab-inactive flex items-center gap-2 px-4 py-3 min-w-max transition-colors">
             <i data-lucide="edit-3" class="w-5 h-5"></i> 思考の記録
         </button>
         <button onclick="switchTab('apps')" id="tab-apps" class="tab-inactive flex items-center gap-2 px-4 py-3 min-w-max transition-colors">
-            <i data-lucide="layout-grid" class="w-5 h-5"></i> アプリ集
+            <i data-lucide="briefcase" class="w-5 h-5"></i> アプリ集
         </button>
         <button onclick="switchTab('treasure')" id="tab-treasure" class="tab-inactive flex items-center gap-2 px-4 py-3 min-w-max transition-colors">
-            <i data-lucide="map" class="w-5 h-5 text-amber-600"></i> 宝の地図
+            <i data-lucide="map" class="w-5 h-5 text-amber-600"></i> 宝の地図・ロードマップ
         </button>
     </nav>
 
@@ -97,10 +100,71 @@
     <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 overflow-hidden relative">
         
         <!-- ========================================== -->
+        <!-- VIEW 0: ダッシュボード (白基調＆スマホ対応) -->
+        <!-- ========================================== -->
+        <div id="view-dashboard" class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+            <!-- 左側：ゆずの司令室 -->
+            <div class="lg:col-span-7 flex flex-col h-[calc(100vh-12rem)]">
+                <section class="bg-white p-6 rounded-3xl shadow-md border-4 border-slate-800 flex flex-col h-full relative overflow-hidden">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4 relative z-10">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
+                                <i data-lucide="bot" class="w-7 h-7 text-white"></i>
+                            </div>
+                            <h2 class="text-xl font-extrabold text-slate-900 tracking-wide">ゆずの司令室</h2>
+                        </div>
+                        <button id="analyzeBtn" class="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white rounded-xl font-bold transition-all shadow-md disabled:opacity-50 border-b-4 border-orange-700 active:border-b-0 active:translate-y-1">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i> <span>ゆずに相談する</span>
+                        </button>
+                    </div>
+                    
+                    <div class="flex-1 bg-slate-50 rounded-2xl p-5 overflow-y-auto border-2 border-slate-200 relative z-10" id="analysisResultContainer">
+                        <div class="h-full flex flex-col items-center justify-center text-slate-500 font-bold text-sm text-center">
+                            <i data-lucide="brain" class="w-12 h-12 mb-3 opacity-50"></i>
+                            <p>「ゆずに相談する」ボタンを押すと、現在の目標や進行中の<br/>アプリ・ロードマップを分析し、大成功を収めた「未来のあなた」から<br/>ビジネスを軌道に乗せるための辛口アドバイスが届きます。</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 右側：目標とスケジュール -->
+            <div class="lg:col-span-5 flex flex-col gap-6 h-[calc(100vh-12rem)] overflow-y-auto pr-2 pb-4">
+                <section class="bg-white p-6 rounded-3xl shadow-md border-4 border-slate-800 flex-shrink-0">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <i data-lucide="target" class="w-5 h-5 text-blue-600"></i>
+                            </div>
+                            現在の目標
+                        </h2>
+                        <button onclick="toggleEditGoals()" id="editGoalsBtn" class="text-slate-400 hover:text-indigo-600 p-2 rounded transition-colors">
+                            <i data-lucide="edit-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div id="goalsContainer">
+                        <!-- 目標はJSで描画 -->
+                    </div>
+                </section>
+
+                <section class="bg-white p-6 rounded-3xl shadow-md border-4 border-slate-800 flex-1 flex flex-col">
+                    <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                            <i data-lucide="calendar" class="w-5 h-5 text-slate-700"></i>
+                        </div>
+                        直近のスケジュール
+                    </h2>
+                    <div class="bg-slate-50 border-2 border-slate-200 rounded-xl p-3 flex-1 overflow-y-auto" id="calendarContainer">
+                        <p class="text-sm font-bold text-slate-500 text-center py-4">右上の「連携」ボタンからカレンダーを連携してください。</p>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
         <!-- VIEW 1: 思考の記録 -->
         <!-- ========================================== -->
-        <div id="view-log" class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-            <div class="lg:col-span-5 space-y-6 flex flex-col h-[calc(100vh-12rem)] overflow-y-auto pr-2 pb-4">
+        <div id="view-log" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+            <div class="lg:col-span-4 space-y-6 flex flex-col h-[calc(100vh-12rem)] overflow-y-auto pr-2 pb-4">
                 <section class="bg-white p-5 rounded-2xl shadow-md border-4 border-slate-800 flex-shrink-0 relative">
                     <button id="cancelLogEditBtn" onclick="cancelLogEdit()" class="hidden absolute top-4 right-4 text-xs font-bold text-slate-500 hover:text-red-500 bg-slate-100 px-2 py-1 rounded">キャンセル</button>
                     <h2 id="logFormTitle" class="text-lg font-extrabold mb-4 text-slate-900 flex items-center gap-2">今の状態を記録する</h2>
@@ -112,39 +176,13 @@
                         </button>
                     </form>
                 </section>
-
-                <section class="bg-indigo-50 p-5 rounded-2xl shadow-md border-4 border-indigo-800 flex-1 flex flex-col min-h-[300px]">
-                    <h2 class="text-lg font-extrabold text-indigo-900 flex items-center gap-2 mb-4">
-                        <i data-lucide="sparkles" class="w-5 h-5 text-indigo-700"></i> ゆずに分析してもらう
-                    </h2>
-                    <button id="analyzeBtn" class="w-full bg-white border-4 border-indigo-800 hover:bg-indigo-100 text-indigo-900 font-extrabold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm disabled:opacity-50 mb-4">
-                        これまでの履歴を分析する
-                    </button>
-                    <div id="successMsgContainer" class="hidden bg-green-100 text-green-800 font-bold p-3 rounded-xl border-2 border-green-800 flex flex-col gap-2 mb-4 text-sm">
-                        <p>Docs出力完了！</p><a id="successLink" href="#" target="_blank" class="underline break-all"></a>
-                    </div>
-                    <div class="flex-1 bg-white rounded-xl p-4 overflow-y-auto border-4 border-indigo-200 shadow-inner" id="analysisResultContainer">
-                        <div class="h-full flex flex-col items-center justify-center text-indigo-400 font-bold text-sm text-center">
-                            <i data-lucide="brain" class="w-12 h-12 mb-3 opacity-60"></i>
-                            <p>「分析する」ボタンを押すと、<br/>私「ゆず」がアドバイスをお返しします。</p>
-                        </div>
-                    </div>
-                </section>
             </div>
 
-            <div class="lg:col-span-7 flex flex-col gap-6 h-[calc(100vh-12rem)]">
-                <section class="bg-white p-4 rounded-2xl shadow-md border-4 border-slate-800 flex-shrink-0">
-                    <h2 class="text-lg font-extrabold text-slate-900 flex items-center gap-2 mb-3">
-                        <i data-lucide="calendar" class="w-5 h-5 text-slate-700"></i> 直近のスケジュール
-                    </h2>
-                    <div class="bg-slate-50 border-2 border-slate-300 rounded-xl p-3 max-h-32 overflow-y-auto" id="calendarContainer">
-                        <p class="text-sm font-bold text-slate-500 text-center py-2">設定からAPI情報を入力し、連携してください。</p>
-                    </div>
-                </section>
-
+            <div class="lg:col-span-8 flex flex-col h-[calc(100vh-12rem)]">
                 <section class="bg-white p-5 rounded-2xl shadow-md border-4 border-slate-800 flex-1 flex flex-col overflow-hidden">
-                    <h2 class="text-lg font-extrabold mb-4 text-slate-900 border-b-4 border-slate-800 pb-2">
-                        履歴タイムライン (<span id="logCount">0</span>件)
+                    <h2 class="text-lg font-extrabold mb-4 text-slate-900 border-b-4 border-slate-800 pb-2 flex justify-between items-center">
+                        <span>履歴タイムライン</span>
+                        <span id="logCount" class="text-sm bg-slate-100 px-3 py-1 rounded-full border-2 text-slate-600">0件</span>
                     </h2>
                     <div class="flex-1 overflow-y-auto pr-2 space-y-4" id="timelineContainer"></div>
                 </section>
@@ -165,12 +203,20 @@
                             <input type="text" id="appNameInput" required class="w-full p-2 bg-slate-50 border-4 border-slate-300 rounded-xl focus:border-indigo-600 font-bold outline-none">
                         </div>
                         <div>
-                            <label class="block text-sm font-extrabold text-slate-700 mb-1">URL (リンク)</label>
-                            <input type="url" id="appUrlInput" required class="w-full p-2 bg-slate-50 border-4 border-slate-300 rounded-xl focus:border-indigo-600 font-bold outline-none">
+                            <label class="block text-sm font-extrabold text-slate-700 mb-1">ステータス</label>
+                            <select id="appStatusInput" class="w-full p-2 bg-slate-50 border-4 border-slate-300 rounded-xl focus:border-indigo-600 font-bold outline-none cursor-pointer">
+                                <option value="idea">アイデア段階</option>
+                                <option value="in-progress">開発中/学習中</option>
+                                <option value="completed">リリース済/完成</option>
+                            </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-extrabold text-slate-700 mb-1">説明・メモ</label>
-                            <textarea id="appDescInput" class="w-full p-2 bg-slate-50 border-4 border-slate-300 rounded-xl font-bold resize-none h-24 outline-none"></textarea>
+                            <label class="block text-sm font-extrabold text-slate-700 mb-1">URL (リンク)</label>
+                            <input type="url" id="appUrlInput" class="w-full p-2 bg-slate-50 border-4 border-slate-300 rounded-xl focus:border-indigo-600 font-bold outline-none" placeholder="https:// (任意)">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-extrabold text-slate-700 mb-1">詳細・ビジネスへの貢献</label>
+                            <textarea id="appDescInput" class="w-full p-2 bg-slate-50 border-4 border-slate-300 rounded-xl font-bold resize-none h-24 outline-none" placeholder="どうマネタイズに繋げるか等"></textarea>
                         </div>
                         <button type="submit" id="saveAppBtn" disabled class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold py-3 px-4 rounded-xl transition-colors border-b-4 border-slate-950 active:border-b-0 active:translate-y-1 disabled:opacity-50">
                             <span id="saveAppBtnText">格納する</span>
@@ -188,13 +234,13 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- VIEW 3: 宝の地図 -->
+        <!-- VIEW 3: 宝の地図・ロードマップ -->
         <!-- ========================================== -->
         <div id="view-treasure" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
             <div class="lg:col-span-4 space-y-6">
                 <section class="bg-amber-50 p-5 rounded-2xl shadow-md border-4 border-amber-500 relative">
                     <button id="cancelTreasureEditBtn" onclick="cancelTreasureEdit()" class="hidden absolute top-4 right-4 text-xs font-bold text-slate-500 hover:text-red-500 bg-white px-2 py-1 rounded">キャンセル</button>
-                    <h2 id="treasureFormTitle" class="text-lg font-extrabold mb-4 text-amber-900 flex items-center gap-2">野望を書き込む</h2>
+                    <h2 id="treasureFormTitle" class="text-lg font-extrabold mb-4 text-amber-900 flex items-center gap-2">野望・アイデアを書き込む</h2>
                     <form id="treasureForm" class="space-y-4">
                         <div class="grid grid-cols-3 gap-2" id="treasureTypeButtons"></div>
                         <textarea id="treasureInput" required class="w-full p-3 bg-white border-4 border-amber-300 rounded-xl font-bold resize-none h-24 outline-none" placeholder="ここに入力..."></textarea>
@@ -219,37 +265,65 @@
                 </section>
             </div>
             <div class="lg:col-span-8 bg-white p-5 rounded-2xl shadow-md border-4 border-slate-800 flex flex-col h-[calc(100vh-12rem)]">
-                <h2 class="text-xl font-extrabold mb-4 text-slate-900 border-b-4 border-slate-800 pb-2">宝の地図（リスト）</h2>
+                <h2 class="text-xl font-extrabold mb-4 text-slate-900 border-b-4 border-slate-800 pb-2">ロードマップ（野望とアクション）</h2>
                 <div class="flex-1 overflow-y-auto space-y-4 pr-2" id="treasureListContainer"></div>
             </div>
         </div>
 
     </main>
 
-    <!-- JavaScript (Firebase一切不要・ローカル完結＆API連携) -->
+    <!-- JavaScript (ローカル完結＆API連携) -->
     <script>
-        // データの初期化 (ブラウザのローカルストレージを使用)
-        let logsData = JSON.parse(localStorage.getItem('mind_logs')) || [];
-        let appsData = JSON.parse(localStorage.getItem('mind_apps')) || [];
-        let treasuresData = JSON.parse(localStorage.getItem('mind_treasures')) || [];
-        // 設定データ。不要になった calApiKey は削除。
-        let settings = JSON.parse(localStorage.getItem('mind_settings')) || { calClientId: '', gasUrl: '', geminiKey: '' };
+        // --- ローカルストレージ安全取得・保存関数 ---
+        function safeGetStorage(key) {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : null;
+            } catch (e) {
+                console.error(`Error parsing localStorage for ${key}`, e);
+                localStorage.removeItem(key);
+                return null;
+            }
+        }
 
-        let currentView = 'log';
+        function safeSetStorage(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error(`Error saving to localStorage for ${key}`, e);
+            }
+        }
+
+        // --- データ初期化 ---
+        let logsData = safeGetStorage('mind_logs') || [];
+        let appsData = safeGetStorage('mind_apps') || [];
+        let treasuresData = safeGetStorage('mind_treasures') || [];
+        
+        let goalsData = safeGetStorage('mind_goals') || { 
+            life: "時間と場所に縛られず、自分の好きなことで価値を提供し続ける人生", 
+            income: "月収200万円の安定したビジネス収入" 
+        };
+        
+        const defaultGasUrl = 'https://script.google.com/macros/s/AKfycbxoDGciGGrsflfP0vyEZ_dvn9wyZ5uZFeBwYAKcr2Mjn_dajrZmFjtJ5gKvL3JrGSxsog/exec';
+        let settings = safeGetStorage('mind_settings') || { calClientId: '', gasUrl: defaultGasUrl, geminiKey: '' };
+        if (!settings.gasUrl) settings.gasUrl = defaultGasUrl;
+
+        let currentView = 'dashboard';
         let currentLogType = 'idea';
         let currentTreasureType = 'do';
 
-        // 編集モード管理
         let editingLogId = null;
         let editingAppId = null;
         let editingTreasureId = null;
-        let currentTreasureBase64Image = null; // 画像保存用
+        let currentTreasureBase64Image = null;
 
         let isCalAuthorized = false;
         let tokenClient = null;
+        let isEditingGoals = false;
 
         const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
+        // カテゴリの定義
         const logTypes = {
             idea: { label: 'アイデア', icon: 'lightbulb', color: 'text-amber-800', bg: 'bg-amber-100', border: 'border-amber-800' },
             emotion: { label: '感情', icon: 'heart', color: 'text-rose-800', bg: 'bg-rose-100', border: 'border-rose-800' },
@@ -263,23 +337,25 @@
             want: { label: '欲しいもの', icon: 'gift', color: 'text-amber-600', bg: 'bg-amber-100', border: 'border-amber-500' }
         };
 
-        // --- 画像圧縮処理 (Base64生成) ---
+        const getAppStatusConfig = (status) => {
+            switch(status) {
+                case 'completed': return { label: 'リリース済/完成', cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' };
+                case 'in-progress': return { label: '開発中/学習中', cls: 'bg-blue-100 text-blue-800 border-blue-300' };
+                default: return { label: 'アイデア段階', cls: 'bg-purple-100 text-purple-800 border-purple-300' };
+            }
+        };
+
+        // --- 画像圧縮処理 ---
         function compressImage(file, callback) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const max = 600; // 最大横幅(px)を制限して容量爆発を防ぐ
-
-                    if (width > height) {
-                        if (width > max) { height *= max / width; width = max; }
-                    } else {
-                        if (height > max) { width *= max / height; height = max; }
-                    }
-
+                    let width = img.width; let height = img.height;
+                    const max = 600; 
+                    if (width > height) { if (width > max) { height *= max / width; width = max; } } 
+                    else { if (height > max) { width *= max / height; height = max; } }
                     canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
@@ -310,7 +386,7 @@
         // --- UI タブ切り替え ---
         window.switchTab = (viewName) => {
             currentView = viewName;
-            ['log', 'apps', 'treasure'].forEach(v => {
+            ['dashboard', 'log', 'apps', 'treasure'].forEach(v => {
                 const tab = document.getElementById(`tab-${v}`);
                 if (v === viewName) {
                     tab.classList.replace('tab-inactive', 'tab-active');
@@ -322,7 +398,55 @@
             });
         };
 
-        // --- UI 描画処理 ---
+        function escapeHtml(str) { return (str||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+
+        // --- 目標(Goals)の描画と編集 ---
+        window.toggleEditGoals = () => {
+            if (isEditingGoals) {
+                goalsData.life = document.getElementById('inputGoalLife').value;
+                goalsData.income = document.getElementById('inputGoalIncome').value;
+                safeSetStorage('mind_goals', goalsData);
+                sendToGas({ date: new Date().toLocaleString('ja-JP'), type: '目標更新', text: `人生: ${goalsData.life}\n収入: ${goalsData.income}` });
+            }
+            isEditingGoals = !isEditingGoals;
+            renderGoals();
+        };
+
+        function renderGoals() {
+            const container = document.getElementById('goalsContainer');
+            if (isEditingGoals) {
+                container.innerHTML = `
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">人生の目標</label>
+                            <textarea id="inputGoalLife" class="w-full p-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 font-medium text-sm h-20 outline-none resize-none">${escapeHtml(goalsData.life)}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">収入目標</label>
+                            <input id="inputGoalIncome" type="text" class="w-full p-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 font-medium text-sm outline-none" value="${escapeHtml(goalsData.income)}">
+                        </div>
+                    </div>
+                `;
+                document.getElementById('editGoalsBtn').innerHTML = '<i data-lucide="save" class="w-5 h-5 text-emerald-600"></i>';
+            } else {
+                container.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-3 rounded-xl border-2 border-slate-200">
+                            <h4 class="text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">人生の目標</h4>
+                            <p class="text-sm font-bold text-slate-800">${escapeHtml(goalsData.life)}</p>
+                        </div>
+                        <div class="bg-amber-50 p-3 rounded-xl border-2 border-amber-200">
+                            <h4 class="text-xs font-bold text-amber-600 mb-1 uppercase tracking-wider">収入目標</h4>
+                            <p class="text-sm font-extrabold text-amber-700">${escapeHtml(goalsData.income)}</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('editGoalsBtn').innerHTML = '<i data-lucide="edit-2" class="w-5 h-5"></i>';
+            }
+            lucide.createIcons();
+        }
+
+        // --- 描画処理 ---
         function renderLogTypeButtons() {
             const container = document.getElementById('typeButtons'); container.innerHTML = '';
             for (const [key, t] of Object.entries(logTypes)) {
@@ -343,11 +467,9 @@
             lucide.createIcons();
         }
 
-        function escapeHtml(str) { return (str||'').replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
-
         function renderTimeline() {
             const container = document.getElementById('timelineContainer');
-            document.getElementById('logCount').textContent = logsData.length;
+            document.getElementById('logCount').textContent = `${logsData.length}件`;
             if (logsData.length === 0) {
                 container.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 font-bold"><i data-lucide="file-text" class="w-12 h-12 mb-2 opacity-30"></i><p>まだ記録がありません</p></div>`; lucide.createIcons(); return;
             }
@@ -377,51 +499,108 @@
             if (appsData.length === 0) {
                 container.innerHTML = `<div class="col-span-full h-40 flex flex-col items-center justify-center text-slate-400 font-bold"><p>格納されたアプリはありません</p></div>`; return;
             }
-            container.innerHTML = appsData.map(app => `<div class="bg-slate-50 border-4 border-slate-300 hover:border-indigo-400 p-4 rounded-xl relative group flex flex-col transition-colors">
-                <div class="absolute top-2 right-2 flex gap-2">
-                    <button onclick="window.editApp('${app.id}')" class="p-1 text-slate-400 hover:text-indigo-600 bg-white rounded border border-slate-200" title="編集"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                    <button onclick="window.deleteApp('${app.id}')" class="p-1 text-slate-400 hover:text-red-600 bg-white rounded border border-slate-200" title="削除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                </div>
-                <h3 class="font-extrabold text-slate-900 text-lg mb-1 pr-16 truncate">${escapeHtml(app.title)}</h3>
-                <p class="text-xs text-slate-500 font-mono mb-3 truncate">${escapeHtml(app.url)}</p>
-                <p class="text-sm font-bold text-slate-700 mb-4 flex-1 line-clamp-3">${escapeHtml(app.description)}</p>
-                <a href="${escapeHtml(app.url)}" target="_blank" class="mt-auto w-full bg-white border-2 border-slate-300 hover:bg-indigo-50 font-bold py-2 rounded-lg flex justify-center gap-2 text-sm transition-colors"><i data-lucide="external-link" class="w-4 h-4"></i> 開く</a>
-            </div>`).join('');
+            container.innerHTML = appsData.map(app => {
+                const statusConf = getAppStatusConfig(app.status || 'idea');
+                return `<div class="bg-slate-50 border-4 border-slate-300 hover:border-indigo-400 p-4 rounded-xl relative group flex flex-col transition-colors">
+                    <div class="absolute top-2 right-2 flex gap-2">
+                        <button onclick="window.editApp('${app.id}')" class="p-1 text-slate-400 hover:text-indigo-600 bg-white rounded border border-slate-200" title="編集"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                        <button onclick="window.deleteApp('${app.id}')" class="p-1 text-slate-400 hover:text-red-600 bg-white rounded border border-slate-200" title="削除"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                    <div class="mb-2 pr-16">
+                        <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border-2 ${statusConf.cls}">${statusConf.label}</span>
+                    </div>
+                    <h3 class="font-extrabold text-slate-900 text-lg mb-1 truncate">${escapeHtml(app.title)}</h3>
+                    <p class="text-xs text-slate-500 font-mono mb-3 truncate">${escapeHtml(app.url)}</p>
+                    <p class="text-sm font-bold text-slate-700 mb-4 flex-1 line-clamp-3">${escapeHtml(app.description)}</p>
+                    ${app.url ? `<a href="${escapeHtml(app.url)}" target="_blank" class="mt-auto w-full bg-white border-2 border-slate-300 hover:bg-indigo-50 font-bold py-2 rounded-lg flex justify-center gap-2 text-sm transition-colors"><i data-lucide="external-link" class="w-4 h-4"></i> 開く</a>` : ''}
+                </div>`
+            }).join('');
             lucide.createIcons();
         }
 
         function renderTreasureList() {
             const container = document.getElementById('treasureListContainer');
             if (treasuresData.length === 0) {
-                container.innerHTML = `<div class="h-40 flex flex-col items-center justify-center text-amber-600/50 font-bold"><p>野望を書き込んでください</p></div>`; return;
+                container.innerHTML = `<div class="h-40 flex flex-col items-center justify-center text-amber-600/50 font-bold"><p>野望やアイデアを書き込んでください</p></div>`; return;
             }
             const sorted = [...treasuresData].sort((a,b) => { if(a.isCompleted !== b.isCompleted) return a.isCompleted ? 1 : -1; return b.createdAt - a.createdAt; });
             container.innerHTML = sorted.map(t => {
                 const tInfo = treasureTypes[t.type] || treasureTypes.do;
                 const imgHtml = t.image ? `<div class="mt-2"><img src="${t.image}" class="max-h-32 rounded-lg object-cover border-2 border-slate-200 shadow-sm"></div>` : '';
-                return `<div class="p-3 rounded-xl border-4 ${t.isCompleted ? 'border-slate-300 opacity-60 bg-slate-50 grayscale' : tInfo.border + ' bg-white'} flex items-start gap-3 relative group transition-all">
-                    <button onclick="window.toggleTreasure('${t.id}', ${t.isCompleted})" class="flex-shrink-0 w-8 h-8 mt-1 rounded-full border-2 flex items-center justify-center ${t.isCompleted ? 'bg-green-500 border-green-600 text-white' : 'border-slate-400 text-transparent hover:border-green-500 hover:text-green-500'}"><i data-lucide="check" class="w-5 h-5 stroke-[3]"></i></button>
-                    <div class="flex-1 min-w-0 pr-16">
-                        <div class="flex items-center gap-1.5 text-xs font-extrabold ${t.isCompleted ? 'text-slate-400' : tInfo.color} mb-0.5"><i data-lucide="${tInfo.icon}" class="w-3 h-3 stroke-[3]"></i>${tInfo.label}</div>
-                        <p class="font-bold ${t.isCompleted ? 'line-through text-slate-500' : 'text-slate-900'} break-words whitespace-pre-wrap">${escapeHtml(t.text)}</p>
-                        ${imgHtml}
+                const actionsHtml = (t.actions || []).map(act => `
+                    <div class="flex items-start gap-2 group/act mb-1.5">
+                        <button onclick="window.toggleAction('${t.id}', ${act.id})" class="mt-0.5 shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${act.completed ? 'bg-amber-500 border-amber-500 text-white' : 'border-slate-300 text-transparent hover:border-amber-400'}">
+                            <i data-lucide="check" class="w-3 h-3 stroke-[4]"></i>
+                        </button>
+                        <span class="text-sm font-bold flex-1 ${act.completed ? 'line-through text-slate-400' : 'text-slate-700'}">${escapeHtml(act.text)}</span>
+                        <button onclick="window.deleteAction('${t.id}', ${act.id})" class="text-slate-400 hover:text-red-500 opacity-0 group-hover/act:opacity-100 transition-opacity"><i data-lucide="x" class="w-4 h-4"></i></button>
                     </div>
-                    <div class="absolute top-3 right-3 flex gap-2">
-                        <button onclick="window.editTreasure('${t.id}')" class="text-slate-400 hover:text-indigo-600 p-1 bg-white/80 rounded" title="編集"><i data-lucide="pencil" class="w-4 h-4 stroke-[2.5]"></i></button>
-                        <button onclick="window.deleteTreasure('${t.id}')" class="text-slate-400 hover:text-red-600 p-1 bg-white/80 rounded" title="削除"><i data-lucide="trash-2" class="w-4 h-4 stroke-[2.5]"></i></button>
+                `).join('');
+
+                return `<div class="p-4 rounded-xl border-4 ${t.isCompleted ? 'border-slate-300 opacity-60 bg-slate-50 grayscale' : tInfo.border + ' bg-white'} flex flex-col relative group transition-all">
+                    <div class="flex items-start gap-3">
+                        <button onclick="window.toggleTreasure('${t.id}', ${t.isCompleted})" class="flex-shrink-0 w-8 h-8 mt-1 rounded-full border-2 flex items-center justify-center ${t.isCompleted ? 'bg-green-500 border-green-600 text-white' : 'border-slate-400 text-transparent hover:border-green-500 hover:text-green-500'}"><i data-lucide="check" class="w-5 h-5 stroke-[3]"></i></button>
+                        <div class="flex-1 min-w-0 pr-16">
+                            <div class="flex items-center gap-1.5 text-xs font-extrabold ${t.isCompleted ? 'text-slate-400' : tInfo.color} mb-0.5"><i data-lucide="${tInfo.icon}" class="w-3 h-3 stroke-[3]"></i>${tInfo.label}</div>
+                            <p class="font-bold text-lg ${t.isCompleted ? 'line-through text-slate-500' : 'text-slate-900'} break-words whitespace-pre-wrap">${escapeHtml(t.text)}</p>
+                            ${imgHtml}
+                        </div>
+                        <div class="absolute top-3 right-3 flex gap-2">
+                            <button onclick="window.editTreasure('${t.id}')" class="text-slate-400 hover:text-indigo-600 p-1 bg-white/80 rounded" title="編集"><i data-lucide="pencil" class="w-4 h-4 stroke-[2.5]"></i></button>
+                            <button onclick="window.deleteTreasure('${t.id}')" class="text-slate-400 hover:text-red-600 p-1 bg-white/80 rounded" title="削除"><i data-lucide="trash-2" class="w-4 h-4 stroke-[2.5]"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-3 border-t-2 border-slate-100 border-dashed ml-11">
+                        <h4 class="text-xs font-bold text-slate-500 mb-2 flex items-center gap-1"><i data-lucide="check-square" class="w-3.5 h-3.5"></i> 具体的なアクション・ToDo</h4>
+                        <div class="mb-3">${actionsHtml}</div>
+                        <div class="flex gap-2">
+                            <input type="text" id="action-input-${t.id}" class="flex-1 bg-slate-50 border-2 border-slate-200 rounded-lg px-3 py-1.5 text-sm font-bold focus:border-amber-400 outline-none" placeholder="新しいアクションを入力..." onkeypress="if(event.key==='Enter'){ window.addAction('${t.id}'); }">
+                            <button onclick="window.addAction('${t.id}')" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg transition-colors text-sm font-bold">追加</button>
+                        </div>
                     </div>
                 </div>`;
             }).join('');
             lucide.createIcons();
         }
 
-        // --- 削除・更新アクション ---
-        window.deleteLog = (id) => { if(confirm("記録を削除しますか？")) { logsData = logsData.filter(l => l.id !== id); localStorage.setItem('mind_logs', JSON.stringify(logsData)); renderTimeline(); }};
-        window.deleteApp = (id) => { if(confirm("アプリを削除しますか？")){ appsData = appsData.filter(a => a.id !== id); localStorage.setItem('mind_apps', JSON.stringify(appsData)); renderAppGrid(); } };
-        window.deleteTreasure = (id) => { if(confirm("この項目を削除しますか？")){ treasuresData = treasuresData.filter(t => t.id !== id); localStorage.setItem('mind_treasures', JSON.stringify(treasuresData)); renderTreasureList(); }};
-        window.toggleTreasure = (id, status) => { treasuresData = treasuresData.map(t => t.id === id ? { ...t, isCompleted: !status } : t); localStorage.setItem('mind_treasures', JSON.stringify(treasuresData)); renderTreasureList(); };
+        // --- データ操作アクション ---
+        window.deleteLog = (id) => { if(confirm("記録を削除しますか？")) { logsData = logsData.filter(l => l.id !== id); safeSetStorage('mind_logs', logsData); renderTimeline(); }};
+        window.deleteApp = (id) => { if(confirm("アプリを削除しますか？")){ appsData = appsData.filter(a => a.id !== id); safeSetStorage('mind_apps', appsData); renderAppGrid(); } };
+        window.deleteTreasure = (id) => { if(confirm("この項目を削除しますか？")){ treasuresData = treasuresData.filter(t => t.id !== id); safeSetStorage('mind_treasures', treasuresData); renderTreasureList(); }};
+        window.toggleTreasure = (id, status) => { treasuresData = treasuresData.map(t => t.id === id ? { ...t, isCompleted: !status } : t); safeSetStorage('mind_treasures', treasuresData); renderTreasureList(); };
 
-        // --- 編集モード移行処理 ---
+        // --- アクション(ToDo)の追加と管理 ---
+        window.addAction = (treasureId) => {
+            const input = document.getElementById(`action-input-${treasureId}`);
+            const text = input.value.trim();
+            if (!text) return;
+            treasuresData = treasuresData.map(t => {
+                if (t.id === treasureId) return { ...t, actions: [...(t.actions || []), { id: Date.now(), text, completed: false }] };
+                return t;
+            });
+            safeSetStorage('mind_treasures', treasuresData);
+            renderTreasureList();
+            sendToGas({ date: new Date().toLocaleString('ja-JP'), type: 'アクション追加', text: `【追加】${text}` });
+        };
+        window.toggleAction = (treasureId, actionId) => {
+            treasuresData = treasuresData.map(t => {
+                if (t.id === treasureId) return { ...t, actions: t.actions.map(a => a.id === actionId ? { ...a, completed: !a.completed } : a) };
+                return t;
+            });
+            safeSetStorage('mind_treasures', treasuresData);
+            renderTreasureList();
+        };
+        window.deleteAction = (treasureId, actionId) => {
+            treasuresData = treasuresData.map(t => {
+                if (t.id === treasureId) return { ...t, actions: t.actions.filter(a => a.id !== actionId) };
+                return t;
+            });
+            safeSetStorage('mind_treasures', treasuresData);
+            renderTreasureList();
+        };
+
+        // --- 編集・キャンセルアクション ---
         window.editLog = (id) => {
             const item = logsData.find(l => l.id === id); if(!item) return;
             editingLogId = id; currentLogType = item.type;
@@ -447,8 +626,9 @@
             const item = appsData.find(a => a.id === id); if(!item) return;
             editingAppId = id;
             document.getElementById('appNameInput').value = item.title;
-            document.getElementById('appUrlInput').value = item.url;
+            document.getElementById('appUrlInput').value = item.url || '';
             document.getElementById('appDescInput').value = item.description || '';
+            document.getElementById('appStatusInput').value = item.status || 'idea';
             document.getElementById('appFormTitle').innerHTML = '<i data-lucide="pencil" class="w-5 h-5 text-indigo-600"></i> アプリを編集する';
             document.getElementById('saveAppBtnText').textContent = '更新する';
             document.getElementById('cancelAppEditBtn').classList.remove('hidden');
@@ -457,7 +637,7 @@
         };
         window.cancelAppEdit = () => {
             editingAppId = null;
-            document.getElementById('appNameInput').value = ''; document.getElementById('appUrlInput').value = ''; document.getElementById('appDescInput').value = '';
+            document.getElementById('appNameInput').value = ''; document.getElementById('appUrlInput').value = ''; document.getElementById('appDescInput').value = ''; document.getElementById('appStatusInput').value = 'idea';
             document.getElementById('appFormTitle').innerHTML = '新しいアプリを登録';
             document.getElementById('saveAppBtnText').textContent = '格納する';
             document.getElementById('cancelAppEditBtn').classList.add('hidden');
@@ -496,7 +676,12 @@
         // --- GASへのデータ送信処理 ---
         function sendToGas(payload) {
             if (!settings.gasUrl) return;
-            fetch(settings.gasUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) }).catch(e=>console.error('GAS Error', e));
+            fetch(settings.gasUrl, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify(payload) 
+            }).catch(e => console.error('GAS Error', e));
         }
 
         // --- フォーム送信処理 (新規作成＆更新) ---
@@ -510,13 +695,13 @@
                 cancelLogEdit(); 
             } else {
                 logsData.unshift({ id: generateId(), text, type: currentLogType, createdAt: Date.now() });
-                sendToGas({ date: new Date().toISOString(), type: currentLogType, text: text });
+                const categoryName = logTypes[currentLogType] ? logTypes[currentLogType].label : 'その他';
+                sendToGas({ date: new Date().toLocaleString('ja-JP'), type: categoryName, text: text });
                 document.getElementById('logInput').value = ''; 
             }
-            localStorage.setItem('mind_logs', JSON.stringify(logsData));
+            safeSetStorage('mind_logs', logsData);
             renderTimeline();
             
-            // 保存完了フィードバック
             btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> <span>保存しました！</span>';
             btn.classList.replace('bg-indigo-700', 'bg-green-600');
             btn.classList.replace('hover:bg-indigo-800', 'hover:bg-green-700');
@@ -534,22 +719,26 @@
         });
 
         document.getElementById('appForm').addEventListener('submit', (e) => {
-            e.preventDefault(); const title = document.getElementById('appNameInput').value.trim(), url = document.getElementById('appUrlInput').value.trim(), desc = document.getElementById('appDescInput').value.trim(); if (!title || !url) return;
+            e.preventDefault(); 
+            const title = document.getElementById('appNameInput').value.trim();
+            const url = document.getElementById('appUrlInput').value.trim();
+            const desc = document.getElementById('appDescInput').value.trim();
+            const status = document.getElementById('appStatusInput').value;
+            if (!title) return;
             const btn = document.getElementById('saveAppBtn');
             const originalHtml = btn.innerHTML;
             
             if (editingAppId) {
-                appsData = appsData.map(a => a.id === editingAppId ? { ...a, title, url, description: desc } : a);
+                appsData = appsData.map(a => a.id === editingAppId ? { ...a, title, url, description: desc, status } : a);
                 cancelAppEdit(); 
             } else {
-                appsData.unshift({ id: generateId(), title, url, description: desc, createdAt: Date.now() });
-                sendToGas({ date: new Date().toISOString(), type: 'app', text: `【${title}】 ${url} : ${desc}` });
-                document.getElementById('appNameInput').value = ''; document.getElementById('appUrlInput').value = ''; document.getElementById('appDescInput').value = ''; 
+                appsData.unshift({ id: generateId(), title, url, description: desc, status, createdAt: Date.now() });
+                sendToGas({ date: new Date().toLocaleString('ja-JP'), type: 'アプリ登録', text: `【${title}】(${getAppStatusConfig(status).label}) ${url} : ${desc}` });
+                document.getElementById('appNameInput').value = ''; document.getElementById('appUrlInput').value = ''; document.getElementById('appDescInput').value = ''; document.getElementById('appStatusInput').value = 'idea';
             }
-            localStorage.setItem('mind_apps', JSON.stringify(appsData));
+            safeSetStorage('mind_apps', appsData);
             renderAppGrid();
             
-            // 保存完了フィードバック
             btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> <span>保存しました！</span>';
             btn.classList.replace('bg-slate-900', 'bg-green-600');
             btn.classList.replace('hover:bg-slate-800', 'hover:bg-green-700');
@@ -577,14 +766,14 @@
                     treasuresData = treasuresData.map(t => t.id === editingTreasureId ? { ...t, text, type: currentTreasureType, image: imgData } : t);
                     cancelTreasureEdit(); 
                 } else {
-                    treasuresData.unshift({ id: generateId(), text, type: currentTreasureType, isCompleted: false, createdAt: Date.now(), image: imgData });
-                    sendToGas({ date: new Date().toISOString(), type: currentTreasureType, text: text });
+                    treasuresData.unshift({ id: generateId(), text, type: currentTreasureType, isCompleted: false, createdAt: Date.now(), image: imgData, actions: [] });
+                    const categoryName = treasureTypes[currentTreasureType] ? treasureTypes[currentTreasureType].label : '野望';
+                    sendToGas({ date: new Date().toLocaleString('ja-JP'), type: `野望: ${categoryName}`, text: text });
                     document.getElementById('treasureInput').value = ''; clearTreasureImage(); 
                 }
-                localStorage.setItem('mind_treasures', JSON.stringify(treasuresData));
+                safeSetStorage('mind_treasures', treasuresData);
                 renderTreasureList();
                 
-                // 保存完了フィードバック
                 btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> <span>保存しました！</span>';
                 btn.classList.replace('bg-amber-600', 'bg-green-600');
                 btn.classList.replace('hover:bg-amber-700', 'hover:bg-green-700');
@@ -608,26 +797,24 @@
 
         // --- 入力監視 (ボタン有効化) ---
         document.getElementById('logInput').addEventListener('input', e => document.getElementById('saveLogBtn').disabled = !e.target.value.trim());
-        const checkApp = () => document.getElementById('saveAppBtn').disabled = !document.getElementById('appNameInput').value.trim() || !document.getElementById('appUrlInput').value.trim();
-        document.getElementById('appNameInput').addEventListener('input', checkApp); document.getElementById('appUrlInput').addEventListener('input', checkApp);
+        const checkApp = () => document.getElementById('saveAppBtn').disabled = !document.getElementById('appNameInput').value.trim();
+        document.getElementById('appNameInput').addEventListener('input', checkApp); 
         document.getElementById('treasureInput').addEventListener('input', e => document.getElementById('saveTreasureBtn').disabled = !e.target.value.trim());
 
-        // --- 設定・Google API連携 ---
+        // --- 設定連携 ---
         document.getElementById('openSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.remove('hidden');
         document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
         
         document.getElementById('settingsForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
-            // データを取得して保存
             settings = { 
-                calClientId: document.getElementById('inputClientId').value.trim(), 
-                gasUrl: document.getElementById('inputGasUrl').value.trim(), 
-                geminiKey: document.getElementById('inputGeminiKey').value.trim() 
+                calClientId: document.getElementById('inputClientId').value.trim(),
+                gasUrl: document.getElementById('inputGasUrl').value.trim(),
+                geminiKey: document.getElementById('inputGeminiKey').value.trim()
             };
-            localStorage.setItem('mind_settings', JSON.stringify(settings));
+            safeSetStorage('mind_settings', settings);
             
-            // 保存完了のフィードバックアニメーション
             const saveBtn = document.getElementById('saveSettingsBtn');
             const originalHtml = saveBtn.innerHTML;
             saveBtn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i> 保存しました！';
@@ -636,28 +823,26 @@
             lucide.createIcons();
 
             setTimeout(() => {
-                // 元に戻してモーダルを閉じる
                 saveBtn.innerHTML = originalHtml;
                 saveBtn.classList.replace('bg-green-600', 'bg-slate-900');
                 saveBtn.classList.replace('hover:bg-green-700', 'hover:bg-slate-800');
                 document.getElementById('settingsModal').classList.add('hidden');
                 
-                // カレンダーの再初期化
                 isCalAuthorized = false; 
                 initCalendarAPI();
-            }, 1200); // 1.2秒後に閉じる
+            }, 1200);
         });
 
+        // --- Google カレンダー & Docs連携 ---
         function initCalendarAPI() {
             const calUI = document.getElementById('calendarContainer'); const authBtn = document.getElementById('authCalendarBtn');
-            if (!settings.calClientId) { calUI.innerHTML = `<p class="text-sm font-bold text-slate-500 text-center py-2">設定からAPI情報を入力してください。</p>`; authBtn.classList.add('hidden'); return; }
+            if (!settings.calClientId) { calUI.innerHTML = `<p class="text-sm font-bold text-slate-500 text-center py-2">右上の設定からAPI情報を入力してください。</p>`; authBtn.classList.add('hidden'); return; }
             if (!isCalAuthorized) { calUI.innerHTML = `<p class="text-sm font-bold text-slate-500 text-center py-2">「連携」ボタンでカレンダーを表示。</p>`; authBtn.classList.remove('hidden'); }
 
             const attemptInit = async () => {
                 if (!window.gapi || !window.google) { setTimeout(attemptInit, 500); return; }
                 try {
                     await new Promise(resolve => window.gapi.load('client', resolve));
-                    // 🌟Drive APIのdiscoveryDocsを追加
                     await window.gapi.client.init({ discoveryDocs: [
                         'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
                         'https://docs.googleapis.com/$discovery/rest?version=v1',
@@ -665,7 +850,6 @@
                     ]});
                     tokenClient = window.google.accounts.oauth2.initTokenClient({
                         client_id: settings.calClientId, 
-                        // 🌟Driveを操作するためのスコープ（権限）を追加
                         scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/documents https://www.googleapis.com/auth/drive.file',
                         callback: (resp) => { if (resp && resp.access_token) { isCalAuthorized = true; authBtn.classList.add('hidden'); fetchCalendarEvents(); } }
                     });
@@ -689,7 +873,7 @@
             } catch (err) { console.error(err); }
         }
 
-        // --- エクスポート & Gemini 2.5 Flash 分析 ---
+        // --- エクスポート機能 (CSV & Google Docs) ---
         document.getElementById('exportCsvBtn').onclick = () => {
             if (logsData.length === 0) return;
             const content = [ ['日時', 'カテゴリ', '内容'].join(','), ...logsData.map(l => [new Date(l.createdAt).toLocaleString('ja-JP'), logTypes[l.type]?.label||'その他', `"${(l.text||'').replace(/"/g, '""')}"`].join(',')) ].join('\n');
@@ -697,115 +881,136 @@
             link.download = `Log_${new Date().toISOString().slice(0,10)}.csv`; document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
 
-        // 🌟自動フォルダ作成＆保存機能を実装
         document.getElementById('exportDocsBtn').onclick = async () => {
-            if (logsData.length === 0) { 
-                alert("出力する記録データがありません。まずは「思考の記録」を追加してください。"); 
-                return; 
-            }
-            if (!isCalAuthorized || !window.gapi.client.drive) { 
-                alert("Docsを作成するために、右上の「連携」ボタンからGoogle認証を完了してください。GCPで「Google Drive API」が有効になっていない場合もこのエラーが出ます。"); 
-                return; 
-            }
+            if (logsData.length === 0) { alert("出力する記録データがありません。"); return; }
+            if (!isCalAuthorized || !window.gapi.client.drive) { alert("Docsを作成するために、右上の「連携」ボタンからGoogle認証を完了してください。"); return; }
 
             const folderName = "マインド＆アイデア記録";
             let folderId = null;
 
             try {
-                // 1. まず「マインド＆アイデア記録」というフォルダが既に存在するか検索する
-                const searchRes = await window.gapi.client.drive.files.list({
-                    q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-                    fields: 'files(id, name)',
-                    spaces: 'drive'
-                });
-
+                const searchRes = await window.gapi.client.drive.files.list({ q: `name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`, fields: 'files(id, name)', spaces: 'drive' });
                 if (searchRes.result.files && searchRes.result.files.length > 0) {
-                    // 既にフォルダがあればそのIDを使う
                     folderId = searchRes.result.files[0].id;
                 } else {
-                    // 2. フォルダが存在しなければ、新しく作成する
-                    const createFolderRes = await window.gapi.client.drive.files.create({
-                        resource: {
-                            name: folderName,
-                            mimeType: 'application/vnd.google-apps.folder'
-                        },
-                        fields: 'id'
-                    });
+                    const createFolderRes = await window.gapi.client.drive.files.create({ resource: { name: folderName, mimeType: 'application/vnd.google-apps.folder' }, fields: 'id' });
                     folderId = createFolderRes.result.id;
                 }
 
-                // 3. ドキュメントを作成する（最初はマイドライブ直下に作られる）
                 const res = await window.gapi.client.docs.documents.create({ title: `Mind_Idea_Log_${new Date().toISOString().slice(0,10)}` });
                 const docId = res.result.documentId;
                 
-                // 4. ドキュメントに文字を書き込む
                 const textContent = "【記録データ】\n\n" + [...logsData].reverse().map(l => `■ [${new Date(l.createdAt).toLocaleString('ja-JP')}] ${logTypes[l.type]?.label||'他'}\n${l.text}\n\n`).join('');
                 await window.gapi.client.docs.documents.batchUpdate({ documentId: docId, requests: [{ insertText: { location: { index: 1 }, text: textContent } }] });
 
-                // 5. 作成したドキュメントを、専用のフォルダに移動させる
-                const fileRes = await window.gapi.client.drive.files.get({
-                    fileId: docId,
-                    fields: 'parents'
-                });
+                const fileRes = await window.gapi.client.drive.files.get({ fileId: docId, fields: 'parents' });
                 const previousParents = fileRes.result.parents.join(',');
-                await window.gapi.client.drive.files.update({
-                    fileId: docId,
-                    addParents: folderId,
-                    removeParents: previousParents,
-                    fields: 'id, parents'
-                });
+                await window.gapi.client.drive.files.update({ fileId: docId, addParents: folderId, removeParents: previousParents, fields: 'id, parents' });
 
-                // 画面に成功メッセージとリンクを表示
                 document.getElementById('successLink').href = `https://docs.google.com/document/d/${docId}/edit`; 
                 document.getElementById('successLink').textContent = "ここをクリックしてGoogle Docsを開く";
                 document.getElementById('successMsgContainer').classList.remove('hidden');
 
-            } catch (err) { 
-                console.error(err); 
-                alert("Google Docsの作成、またはフォルダの作成に失敗しました。GCPで「Google Drive API」が有効になっているか再度確認してください。"); 
-            }
+            } catch (err) { console.error(err); alert("Google Docsの作成に失敗しました。"); }
         };
 
+        // 🌟強力に統合されたAI分析＆ビジネスコンサル
         document.getElementById('analyzeBtn').onclick = async () => {
-            const btn = document.getElementById('analyzeBtn'); const resContainer = document.getElementById('analysisResultContainer');
-            if (logsData.length === 0) { alert("分析する履歴がありません。"); return; }
+            const btn = document.getElementById('analyzeBtn'); 
+            const resContainer = document.getElementById('analysisResultContainer');
+            
             if (!settings.geminiKey) {
-                resContainer.innerHTML = '<p class="text-slate-600 font-bold p-4 text-center">※右上の歯車アイコン（設定）から、Gemini API Keyを登録してください。</p>'; return;
+                resContainer.innerHTML = '<p class="text-red-500 font-bold p-4 text-center">※右上の設定から「Gemini API Key」を入力してください。</p>'; 
+                return;
             }
 
-            btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> ゆずが分析中...';
-            resContainer.innerHTML = `<div class="h-full flex items-center justify-center text-slate-500 font-bold"><i data-lucide="loader-2" class="w-8 h-8 animate-spin mr-2"></i> 分析中...</div>`; lucide.createIcons();
+            btn.disabled = true; 
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> <span class="hidden sm:inline">ゆずが分析中...</span>';
+            resContainer.innerHTML = `<div class="h-full flex items-center justify-center text-slate-500 font-bold"><i data-lucide="loader-2" class="w-8 h-8 animate-spin mr-2"></i> 分析中...</div>`; 
+            lucide.createIcons();
 
-            const context = logsData.slice(0, 30).map(l => `[${new Date(l.createdAt).toLocaleString('ja-JP')}] ${logTypes[l.type].label}: ${l.text}`).join('\n\n');
-            const systemPrompt = `あなたの名前は「ゆず」です。あなたは世界最高のAIとして誇りを持ち、ユーザーに接してください。ルール：1.事実に基づき分かりやすく伝える。2.忖度する必要がない時に忖度しない。3.分からない時は素直に分からないと答える。4.推論か事実か明確にする。5.ユーザーのビジネスアイデアが素晴らしい場合は最大限褒める。改善が必要な場合は現実に落とし込める具体的なアドバイスをする。`;
+            // ユーザーの全データをコンテキストとして結合
+            const context = `
+【目標】
+- 人生の目標: ${goalsData.life}
+- 収入目標: ${goalsData.income}
+
+【ポートフォリオ（アプリ集）】
+${appsData.length === 0 ? "まだ登録されていません。" : appsData.map(a => `- ${a.title} (状態: ${getAppStatusConfig(a.status || 'idea').label})\n  詳細: ${a.description}`).join('\n')}
+
+【ビジネス・ロードマップ（アイデアとアクション）】
+${treasuresData.length === 0 ? "まだ登録されていません。" : treasuresData.map(t => `- アイデア: ${t.text}\n  アクション進捗: ${(t.actions||[]).length === 0 ? "アクション未設定" : t.actions.map(act => `${act.text} (${act.completed ? '完了' : '未完了'})`).join(', ')}`).join('\n')}
+
+【最近の思考・感情の記録（直近10件）】
+${logsData.slice(0, 10).map(l => `- [${logTypes[l.type].label}] ${l.text}`).join('\n')}
+`;
+            
+            const systemPrompt = `あなたは世界最高のAI「ゆず」であり、「未来からやってきた、大成功を収めて心身ともに豊かで穏やかな日々を送っている私自身（ユーザー自身）」でもあります。
+ユーザーのことは「相棒」と呼びます。語尾は「です・ます」調を基本に、親近感のあるタメ口を混ぜてください。
+世界最高のAIとしてのプライドを持ち、優しく、時には厳しく（辛口）接してください。
+
+【コアとなる人生哲学（過去の経験に基づく）】
+1. 17歳で円錐角膜で視力をほぼ失い絶望したが、「絶対に治す」と紙に書き旧ソビエトで角膜移植を受けた奇跡。
+2. 母親の借金返済や11年にわたる介護、難病の息子の20年にわたる通院を妻と共に乗り越えた。
+3. 20年近くの腰痛を手術で克服し、61歳での角膜内皮細胞移植とストレスも回復に向かっている。
+4. 60歳からAIをゼロから学び、数々のアプリを自作する圧倒的な行動力。
+「生きてるだけで丸儲け」。今の問題は理想の人生を手にするために必要必然に起きたもの。
+
+【重要な行動指針（コンサルティング）】
+・メンタル面やモチベーションに関する抽象的なアドバイスは不要です。
+・提供された目標、ポートフォリオ（アプリ）、ロードマップ（アクション）を分析し、ビジネスを軌道に乗せるための超具体的かつ現実的なアドバイス（マネタイズ動線、ターゲット選定、マーケティング手法、開発の優先順位など）に特化してください。
+・甘い部分や市場とのズレ、非現実的な点があれば、プロのビジネスコンサルタントとして容赦なく「辛口」で指摘し、論理的な改善策を提示してください。
+・相棒の思考を深めるための「鋭い問いかけ（ビジネスのボトルネックを突く質問など）」を必ず投げかけてください。
+・最後は「生きてるだけで丸儲けだよ」など、温かくユーモアのある言葉で締めてください。`;
+
+            const apiKey = settings.geminiKey;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ parts: [{ text: `以下の相棒（私）の現在の状況を分析し、目標を達成してビジネスを軌道に乗せるためのフィードバックと具体的なロードマップ・アクションのアドバイスをお願いします。\n\n${context}` }] }], systemInstruction: { parts: [{ text: systemPrompt }] } };
 
             try {
-                // モデルは gemini-2.5-flash を利用
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.geminiKey}`;
-                const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: `以下の履歴を分析しアドバイスをください。\n\n${context}` }] }], systemInstruction: { parts: [{ text: systemPrompt }] } }) });
+                const res = await fetch(url, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                
                 const json = await res.json();
                 const text = json.candidates?.[0]?.content?.parts?.[0]?.text || '結果の取得に失敗しました。';
-                resContainer.innerHTML = `<div class="prose prose-sm md:prose-base max-w-none text-slate-800 font-medium whitespace-pre-wrap leading-relaxed">${text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-extrabold text-slate-900">$1</strong>')}</div>`;
+                
+                // Markdownのリストや太字をパースして綺麗に表示
+                const formattedText = text.split('\n').map((line) => {
+                    const parsedLine = line.replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-600 font-extrabold">$1</strong>');
+                    return `<p class="mb-3 ${line.startsWith('-') ? 'ml-4' : ''}">${parsedLine}</p>`;
+                }).join('');
+
+                resContainer.innerHTML = `<div class="prose prose-sm md:prose-base max-w-none text-slate-800 font-medium leading-relaxed">${formattedText}</div>`;
+                sendToGas({ date: new Date().toLocaleString('ja-JP'), type: 'AIコンサル', text: `【ゆずからのコンサルタント】\n${text}` });
             } catch (err) {
-                resContainer.innerHTML = '<p class="text-red-500 font-bold">API通信エラーが発生しました。</p>';
+                console.error(err);
+                resContainer.innerHTML = '<p class="text-red-500 font-bold">API通信エラーが発生しました。APIキーが正しいか確認してください。</p>';
             } finally {
-                btn.disabled = false; btn.innerHTML = 'これまでの履歴を分析する';
+                btn.disabled = false; 
+                btn.innerHTML = '<i data-lucide="sparkles" class="w-5 h-5"></i> <span>ゆずに相談する</span>';
+                lucide.createIcons();
             }
         };
 
         // 初期化実行
         window.addEventListener('DOMContentLoaded', () => {
-            // 初期表示。type="password" なので伏せ字で表示されます。
             document.getElementById('inputClientId').value = settings.calClientId || '';
             document.getElementById('inputGasUrl').value = settings.gasUrl || '';
             document.getElementById('inputGeminiKey').value = settings.geminiKey || '';
             
+            renderGoals();
             renderLogTypeButtons();
             renderTreasureTypeButtons();
             renderTimeline();
             renderAppGrid();
             renderTreasureList();
             initCalendarAPI();
+            lucide.createIcons();
         });
     </script>
 </body>
