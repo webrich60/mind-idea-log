@@ -1,6 +1,8 @@
 (() => {
   'use strict';
 
+  const LIFE_COMPASS_UI_VERSION = 'ui-color-fixed-v2-20260725';
+
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
   const LEGACY_KEYS = ['life_compass_v2', 'mind_logs', 'mind_apps', 'mind_treasures', 'mind_goals', 'mind_settings', 'mind_import_urls'];
@@ -128,6 +130,18 @@
       .frame-theme-ai { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-color: #94a3b8; }
       .frame-theme-backup { background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%); border-color: #7dd3fc; }
       .frame-theme-default { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-color: #cbd5e1; }
+
+      /* 強制適用版：GitHub/Tailwind/既存CSSの影響を受けても色が出るようにする */
+      .dashboard-card.frame-theme-current, .home-info-card.frame-theme-current, .mini-count-card.frame-theme-current { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important; border-color: #93c5fd !important; }
+      .dashboard-card.frame-theme-mind, .home-info-card.frame-theme-mind, .mini-count-card.frame-theme-mind { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important; border-color: #fda4af !important; }
+      .dashboard-card.frame-theme-insights, .home-info-card.frame-theme-insights, .mini-count-card.frame-theme-insights { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important; border-color: #fcd34d !important; }
+      .dashboard-card.frame-theme-reflection, .home-info-card.frame-theme-reflection, .mini-count-card.frame-theme-reflection { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%) !important; border-color: #fdba74 !important; }
+      .dashboard-card.frame-theme-premise, .home-info-card.frame-theme-premise, .mini-count-card.frame-theme-premise { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%) !important; border-color: #c4b5fd !important; }
+      .dashboard-card.frame-theme-future, .home-info-card.frame-theme-future, .mini-count-card.frame-theme-future { background: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%) !important; border-color: #86efac !important; }
+      .dashboard-card.frame-theme-goal, .home-info-card.frame-theme-goal, .mini-count-card.frame-theme-goal { background: linear-gradient(135deg, #eef6ff 0%, #dbeafe 100%) !important; border-color: #60a5fa !important; }
+      .dashboard-card.frame-theme-ai, .home-info-card.frame-theme-ai, .mini-count-card.frame-theme-ai { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important; border-color: #94a3b8 !important; }
+      .dashboard-card.frame-theme-backup, .home-info-card.frame-theme-backup, .mini-count-card.frame-theme-backup { background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%) !important; border-color: #7dd3fc !important; }
+      .dashboard-card .frame-icon-wrap, .mini-count-card .mini-icon { background: rgba(255,255,255,.72) !important; }
 
       .frame-icon-wrap {
         width: 58px;
