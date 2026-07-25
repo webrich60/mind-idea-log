@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'ui-color-fixed-v2-20260725';
+  const LIFE_COMPASS_UI_VERSION = 'ui-color-inline-fixed-v3-20260725';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -86,6 +86,44 @@
 
   function frameThemeClass(key) {
     return frameThemes[key]?.className || 'frame-theme-default';
+  }
+
+  // CSSが効かない環境でも確実に色を反映するため、主要カードにはinline styleも付与する。
+  function frameThemeStyle(keyOrLabel) {
+    const key = String(keyOrLabel || '');
+    const map = {
+      current: { bg: '#eef6ff', bg2: '#dbeafe', border: '#93c5fd', icon: '#1d4ed8' },
+      mind: { bg: '#fff1f5', bg2: '#ffe4e6', border: '#f9a8d4', icon: '#db2777' },
+      insights: { bg: '#fffbeb', bg2: '#fef3c7', border: '#fcd34d', icon: '#ca8a04' },
+      reflection: { bg: '#fff7ed', bg2: '#ffedd5', border: '#fdba74', icon: '#ea580c' },
+      reflections: { bg: '#fff7ed', bg2: '#ffedd5', border: '#fdba74', icon: '#ea580c' },
+      premise: { bg: '#f5f3ff', bg2: '#ede9fe', border: '#c4b5fd', icon: '#7c3aed' },
+      premises: { bg: '#f5f3ff', bg2: '#ede9fe', border: '#c4b5fd', icon: '#7c3aed' },
+      future: { bg: '#ecfdf5', bg2: '#dcfce7', border: '#86efac', icon: '#16a34a' },
+      goals: { bg: '#eff6ff', bg2: '#dbeafe', border: '#60a5fa', icon: '#1d4ed8' },
+      goal: { bg: '#eff6ff', bg2: '#dbeafe', border: '#60a5fa', icon: '#1d4ed8' },
+      ai: { bg: '#f1f5f9', bg2: '#e2e8f0', border: '#94a3b8', icon: '#475569' },
+      aiHistory: { bg: '#f1f5f9', bg2: '#e2e8f0', border: '#94a3b8', icon: '#475569' },
+      backup: { bg: '#eff6ff', bg2: '#e0f2fe', border: '#7dd3fc', icon: '#0369a1' },
+      default: { bg: '#ffffff', bg2: '#f8fafc', border: '#cbd5e1', icon: '#2563eb' }
+    };
+    let s = map[key];
+    if (!s) {
+      if (key.includes('現在地')) s = map.current;
+      else if (key.includes('心')) s = map.mind;
+      else if (key.includes('気づき')) s = map.insights;
+      else if (key.includes('反省')) s = map.reflection;
+      else if (key.includes('前提')) s = map.premise;
+      else if (key.includes('未来')) s = map.future;
+      else if (key.includes('目標')) s = map.goals;
+      else if (key.includes('AI')) s = map.ai;
+      else s = map.default;
+    }
+    return {
+      card: `background:linear-gradient(135deg, ${s.bg} 0%, ${s.bg2} 100%) !important;border-color:${s.border} !important;`,
+      icon: `color:${s.icon} !important;`,
+      iconBox: `background:rgba(255,255,255,.76) !important;border:1.5px solid ${s.border} !important;box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 4px 10px rgba(15,23,42,.06) !important;`
+    };
   }
 
   function frameThemeClassByLabel(label = '') {
@@ -529,11 +567,11 @@
         <div class="lg:col-span-4 space-y-6">
           <div class="panel border-blue-700">
             <div class="panel-head"><h2 class="panel-title text-blue-800"><i data-lucide="flag"></i> 目標の上位</h2></div>
-            <div class="space-y-3">${topGoals.length ? topGoals.map(g => `<div class="home-info-card frame-theme-goal"><p class="font-black text-blue-900">${escapeHtml(g.title)}</p><p class="text-sm font-bold text-slate-700 mt-1">${escapeHtml(shorten(g.body, 90))}</p></div>`).join('') : emptyList('目標・目的をまだ登録していません。')}</div>
+            <div class="space-y-3">${topGoals.length ? topGoals.map(g => `<div class="home-info-card frame-theme-goal" style="${frameThemeStyle('goals').card}"><p class="font-black text-blue-900">${escapeHtml(g.title)}</p><p class="text-sm font-bold text-slate-700 mt-1">${escapeHtml(shorten(g.body, 90))}</p></div>`).join('') : emptyList('目標・目的をまだ登録していません。')}</div>
           </div>
           <div class="panel border-indigo-700">
             <div class="panel-head"><h2 class="panel-title text-indigo-800"><i data-lucide="scale"></i> 見直したい前提</h2></div>
-            <div class="space-y-3">${limiting.length ? limiting.map(p => `<div class="home-info-card frame-theme-premise"><p class="font-black text-indigo-900">${escapeHtml(p.before)}</p><p class="text-sm font-bold text-slate-700 mt-1">→ ${escapeHtml(p.after || '置き換え前提を追加しましょう')}</p></div>`).join('') : emptyList('制限する前提はまだありません。')}</div>
+            <div class="space-y-3">${limiting.length ? limiting.map(p => `<div class="home-info-card frame-theme-premise" style="${frameThemeStyle('premise').card}"><p class="font-black text-indigo-900">${escapeHtml(p.before)}</p><p class="text-sm font-bold text-slate-700 mt-1">→ ${escapeHtml(p.after || '置き換え前提を追加しましょう')}</p></div>`).join('') : emptyList('制限する前提はまだありません。')}</div>
           </div>
         </div>
       </div>`;
@@ -541,11 +579,12 @@
 
   function statCard(label, count, icon, tab) {
     const theme = frameThemeClass(tab);
-    return `<button onclick="LifeCompass.switchTab('${tab}')" class="dashboard-card ${theme}">
+    const style = frameThemeStyle(tab);
+    return `<button onclick="LifeCompass.switchTab('${tab}')" class="dashboard-card ${theme}" style="${style.card}">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <div class="frame-icon-wrap"><div class="frame-icon"><i data-lucide="${icon}"></i></div></div>
-          <p class="frame-title">${label}</p>
+          <div class="frame-icon-wrap" style="${style.iconBox}"><div class="frame-icon" style="${style.icon}"><i data-lucide="${icon}"></i></div></div>
+          <p class="frame-title" style="${style.icon}">${label}</p>
         </div>
         <span class="frame-count">${count}</span>
       </div>
@@ -807,9 +846,10 @@
 
   function miniCount(label, count) {
     const theme = frameThemeClassByLabel(label);
+    const style = frameThemeStyle(label);
     const iconMap = { '現在地':'map-pin', '心の声':'heart', '気づき':'lightbulb', '反省':'rotate-ccw', '前提':'scale', '未来':'mountain-snow', '目標':'target', 'AI履歴':'bot' };
     const icon = iconMap[label] || 'circle';
-    return `<div class="mini-count-card ${theme}"><span class="inline-flex items-center gap-2"><span class="mini-icon frame-icon"><i data-lucide="${icon}"></i></span><span>${label}</span></span><span class="text-lg font-black">${count}</span></div>`;
+    return `<div class="mini-count-card ${theme}" style="${style.card}"><span class="inline-flex items-center gap-2"><span class="mini-icon frame-icon" style="${style.iconBox}${style.icon}"><i data-lucide="${icon}"></i></span><span style="${style.icon}">${label}</span></span><span class="text-lg font-black">${count}</span></div>`;
   }
 
   function buildPrompt(mode, question) {
