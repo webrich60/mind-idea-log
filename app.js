@@ -63,6 +63,133 @@
     goal: ['人生目的', '健康', 'お金', '仕事/事業', '家族', '暮らし', '学び', '旅', '安心']
   };
 
+
+  // --- UIテーマ：各フレームの薄色背景・大きめアイコン・スマホ最適化 ---
+  const frameThemes = {
+    current: { className: 'frame-theme-current', label: '現在地' },
+    mind: { className: 'frame-theme-mind', label: '心の声' },
+    insights: { className: 'frame-theme-insights', label: '気づき' },
+    reflection: { className: 'frame-theme-reflection', label: '反省' },
+    reflections: { className: 'frame-theme-reflection', label: '反省' },
+    premise: { className: 'frame-theme-premise', label: '前提' },
+    premises: { className: 'frame-theme-premise', label: '前提' },
+    future: { className: 'frame-theme-future', label: '未来' },
+    goals: { className: 'frame-theme-goal', label: '目標' },
+    goal: { className: 'frame-theme-goal', label: '目標' },
+    ai: { className: 'frame-theme-ai', label: 'AI履歴' },
+    aiHistory: { className: 'frame-theme-ai', label: 'AI履歴' },
+    backup: { className: 'frame-theme-backup', label: 'バックアップ' },
+    system: { className: 'frame-theme-backup', label: 'システム' }
+  };
+
+  function frameThemeClass(key) {
+    return frameThemes[key]?.className || 'frame-theme-default';
+  }
+
+  function frameThemeClassByLabel(label = '') {
+    const text = String(label);
+    if (text.includes('現在地')) return frameThemeClass('current');
+    if (text.includes('心')) return frameThemeClass('mind');
+    if (text.includes('気づき')) return frameThemeClass('insights');
+    if (text.includes('反省')) return frameThemeClass('reflection');
+    if (text.includes('前提')) return frameThemeClass('premise');
+    if (text.includes('未来')) return frameThemeClass('future');
+    if (text.includes('目標')) return frameThemeClass('goals');
+    if (text.includes('AI')) return frameThemeClass('ai');
+    return 'frame-theme-default';
+  }
+
+  function injectEnhancedUiStyles() {
+    if (document.getElementById('life-compass-enhanced-ui')) return;
+    const style = document.createElement('style');
+    style.id = 'life-compass-enhanced-ui';
+    style.textContent = `
+      .dashboard-card {
+        width: 100%;
+        min-height: 116px;
+        border-radius: 1.35rem;
+        border: 2px solid #cbd5e1;
+        padding: 1.2rem;
+        text-align: left;
+        box-shadow: 0 5px 15px rgba(15, 23, 42, .065);
+        transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease, background .14s ease;
+      }
+      .dashboard-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(15, 23, 42, .11);
+      }
+      .frame-theme-current { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #93c5fd; }
+      .frame-theme-mind { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-color: #fda4af; }
+      .frame-theme-insights { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-color: #fcd34d; }
+      .frame-theme-reflection { background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%); border-color: #fdba74; }
+      .frame-theme-premise { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border-color: #c4b5fd; }
+      .frame-theme-future { background: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%); border-color: #86efac; }
+      .frame-theme-goal { background: linear-gradient(135deg, #eef6ff 0%, #dbeafe 100%); border-color: #60a5fa; }
+      .frame-theme-ai { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-color: #94a3b8; }
+      .frame-theme-backup { background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%); border-color: #7dd3fc; }
+      .frame-theme-default { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-color: #cbd5e1; }
+
+      .frame-icon-wrap {
+        width: 58px;
+        height: 58px;
+        min-width: 58px;
+        min-height: 58px;
+        border-radius: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, .68);
+        border: 1.5px solid rgba(148, 163, 184, .28);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 4px 10px rgba(15, 23, 42, .055);
+        margin-bottom: .85rem;
+      }
+      .frame-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
+      .frame-icon svg { width: 31px; height: 31px; stroke-width: 2.45; }
+      .frame-title { font-size: .98rem; line-height: 1.35; font-weight: 900; color: #1e293b; }
+      .frame-count { font-size: 2.85rem; line-height: .95; font-weight: 950; letter-spacing: -.04em; color: #020617; }
+      .frame-theme-current .frame-icon, .frame-theme-current .frame-title { color: #1d4ed8; }
+      .frame-theme-mind .frame-icon, .frame-theme-mind .frame-title { color: #be123c; }
+      .frame-theme-insights .frame-icon, .frame-theme-insights .frame-title { color: #a16207; }
+      .frame-theme-reflection .frame-icon, .frame-theme-reflection .frame-title { color: #c2410c; }
+      .frame-theme-premise .frame-icon, .frame-theme-premise .frame-title { color: #6d28d9; }
+      .frame-theme-future .frame-icon, .frame-theme-future .frame-title { color: #15803d; }
+      .frame-theme-goal .frame-icon, .frame-theme-goal .frame-title { color: #1e40af; }
+      .frame-theme-ai .frame-icon, .frame-theme-ai .frame-title { color: #334155; }
+      .frame-theme-backup .frame-icon, .frame-theme-backup .frame-title { color: #0369a1; }
+
+      .home-info-card, .mini-count-card {
+        border: 2px solid #cbd5e1;
+        border-radius: 1.1rem;
+        padding: 1rem;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, .045);
+      }
+      .mini-count-card { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+      .mini-count-card .mini-icon {
+        width: 38px; height: 38px; min-width: 38px; border-radius: .9rem;
+        display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,.65);
+        border: 1px solid rgba(148, 163, 184, .25);
+      }
+      .mini-count-card .mini-icon svg { width: 22px; height: 22px; stroke-width: 2.4; }
+      .tab-icon, .tab-icon svg { width: 22px; height: 22px; stroke-width: 2.35; }
+
+      @media (max-width: 768px) {
+        .dashboard-card { min-height: 104px; padding: 1rem; border-radius: 1.15rem; }
+        .frame-icon-wrap { width: 53px; height: 53px; min-width: 53px; min-height: 53px; border-radius: 1rem; margin-bottom: .7rem; }
+        .frame-icon svg { width: 29px; height: 29px; stroke-width: 2.55; }
+        .frame-title { font-size: .9rem; }
+        .frame-count { font-size: 2.25rem; }
+        .tab-icon, .tab-icon svg { width: 21px; height: 21px; }
+      }
+      @media (max-width: 480px) {
+        .dashboard-card { min-height: 98px; padding: .9rem; }
+        .frame-icon-wrap { width: 49px; height: 49px; min-width: 49px; min-height: 49px; }
+        .frame-icon svg { width: 27px; height: 27px; }
+        .frame-count { font-size: 2.05rem; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   function showToast(message, type = 'normal') {
     const el = document.getElementById('toast');
     if (!el) return;
@@ -280,7 +407,7 @@
 
   function mountTabs() {
     const nav = document.getElementById('tabs');
-    nav.innerHTML = tabs.map(t => `<button class="tab-btn ${t.id === activeTab ? 'active' : ''} px-4 py-3.5 min-w-max transition-colors text-sm font-black flex items-center gap-2" data-tab="${t.id}"><i data-lucide="${t.icon}" class="w-4 h-4"></i>${t.label}</button>`).join('');
+    nav.innerHTML = tabs.map(t => `<button class="tab-btn ${t.id === activeTab ? 'active' : ''} px-4 py-3.5 min-w-max transition-colors text-sm font-black flex items-center gap-2" data-tab="${t.id}"><span class="tab-icon"><i data-lucide="${t.icon}"></i></span>${t.label}</button>`).join('');
     nav.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
   }
 
@@ -388,18 +515,27 @@
         <div class="lg:col-span-4 space-y-6">
           <div class="panel border-blue-700">
             <div class="panel-head"><h2 class="panel-title text-blue-800"><i data-lucide="flag"></i> 目標の上位</h2></div>
-            <div class="space-y-3">${topGoals.length ? topGoals.map(g => `<div class="rounded-2xl bg-blue-50 border-2 border-blue-200 p-4"><p class="font-black text-blue-900">${escapeHtml(g.title)}</p><p class="text-sm font-bold text-slate-700 mt-1">${escapeHtml(shorten(g.body, 90))}</p></div>`).join('') : emptyList('目標・目的をまだ登録していません。')}</div>
+            <div class="space-y-3">${topGoals.length ? topGoals.map(g => `<div class="home-info-card frame-theme-goal"><p class="font-black text-blue-900">${escapeHtml(g.title)}</p><p class="text-sm font-bold text-slate-700 mt-1">${escapeHtml(shorten(g.body, 90))}</p></div>`).join('') : emptyList('目標・目的をまだ登録していません。')}</div>
           </div>
           <div class="panel border-indigo-700">
             <div class="panel-head"><h2 class="panel-title text-indigo-800"><i data-lucide="scale"></i> 見直したい前提</h2></div>
-            <div class="space-y-3">${limiting.length ? limiting.map(p => `<div class="rounded-2xl bg-indigo-50 border-2 border-indigo-200 p-4"><p class="font-black text-indigo-900">${escapeHtml(p.before)}</p><p class="text-sm font-bold text-slate-700 mt-1">→ ${escapeHtml(p.after || '置き換え前提を追加しましょう')}</p></div>`).join('') : emptyList('制限する前提はまだありません。')}</div>
+            <div class="space-y-3">${limiting.length ? limiting.map(p => `<div class="home-info-card frame-theme-premise"><p class="font-black text-indigo-900">${escapeHtml(p.before)}</p><p class="text-sm font-bold text-slate-700 mt-1">→ ${escapeHtml(p.after || '置き換え前提を追加しましょう')}</p></div>`).join('') : emptyList('制限する前提はまだありません。')}</div>
           </div>
         </div>
       </div>`;
   }
 
   function statCard(label, count, icon, tab) {
-    return `<button onclick="LifeCompass.switchTab('${tab}')" class="bg-white border-2 border-slate-300 hover:border-blue-500 rounded-2xl p-4 text-left shadow-sm transition-colors"><div class="flex items-center justify-between"><i data-lucide="${icon}" class="w-5 h-5 text-blue-700"></i><span class="text-2xl font-black">${count}</span></div><p class="text-sm font-black text-slate-600 mt-2">${label}</p></button>`;
+    const theme = frameThemeClass(tab);
+    return `<button onclick="LifeCompass.switchTab('${tab}')" class="dashboard-card ${theme}">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="frame-icon-wrap"><div class="frame-icon"><i data-lucide="${icon}"></i></div></div>
+          <p class="frame-title">${label}</p>
+        </div>
+        <span class="frame-count">${count}</span>
+      </div>
+    </button>`;
   }
 
   function renderForms() {
@@ -656,7 +792,10 @@
   }
 
   function miniCount(label, count) {
-    return `<div class="rounded-xl bg-slate-50 border-2 border-slate-200 p-3 flex justify-between"><span>${label}</span><span>${count}</span></div>`;
+    const theme = frameThemeClassByLabel(label);
+    const iconMap = { '現在地':'map-pin', '心の声':'heart', '気づき':'lightbulb', '反省':'rotate-ccw', '前提':'scale', '未来':'mountain-snow', '目標':'target', 'AI履歴':'bot' };
+    const icon = iconMap[label] || 'circle';
+    return `<div class="mini-count-card ${theme}"><span class="inline-flex items-center gap-2"><span class="mini-icon frame-icon"><i data-lucide="${icon}"></i></span><span>${label}</span></span><span class="text-lg font-black">${count}</span></div>`;
   }
 
   function buildPrompt(mode, question) {
@@ -946,6 +1085,7 @@ ${recentRef.length ? recentRef.map(r => `・${r.title}：次は「${r.nextAction
   }
 
   function renderAll() {
+    injectEnhancedUiStyles();
     mountTabs();
     renderHome();
     renderForms();
@@ -964,6 +1104,7 @@ ${recentRef.length ? recentRef.map(r => `・${r.title}：次は「${r.nextAction
   window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, state: () => state };
 
   document.addEventListener('DOMContentLoaded', () => {
+    injectEnhancedUiStyles();
     setupHeaderButtons();
     renderAll();
     bindForms();
