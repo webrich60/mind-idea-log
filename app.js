@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'notebooklm-v4_2-20260726';
+  const LIFE_COMPASS_UI_VERSION = 'sync-v4_3-20260726';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -19,7 +19,7 @@
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
   const emptyData = () => ({
-    version: 4,
+    version: 4.3,
     updatedAt: nowIso(),
     createdAt: nowIso(),
     profile: {
@@ -41,6 +41,8 @@
       aiProvider: 'gemini',
       gasUrl: '',
       gasSyncEnabled: true,
+      syncPullEnabled: true,
+      lastSyncAt: '',
       notebookDocUrl: '',
       notebookDocUpdatedAt: '',
       profileUpdatedAt: ''
@@ -341,7 +343,7 @@
     ['current','mind','insights','reflections','premises','future','goals','imports','aiHistory'].forEach(k => {
       merged[k] = Array.isArray(data[k]) ? data[k] : [];
     });
-    merged.version = 4.1;
+    merged.version = 4.3;
     return merged;
   }
 
@@ -416,6 +418,131 @@
 
   function isGasSyncEnabled() {
     return Boolean(getGasUrl() && state.profile.gasSyncEnabled !== false);
+  }
+
+
+  function isPullSyncEnabled() {
+    return Boolean(getGasUrl() && state.profile.syncPullEnabled !== false);
+  }
+
+  function dateValue(value) {
+    const t = value ? new Date(value).getTime() : 0;
+    return Number.isFinite(t) ? t : 0;
+  }
+
+  function gasJsonp(action, params = {}, timeoutMs = 25000) {
+    const url = getGasUrl();
+    if (!url) return Promise.reject(new Error('GAS WebアプリURLが未設定です。'));
+    return new Promise((resolve, reject) => {
+      const callbackName = `lifeCompassJsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const script = document.createElement('script');
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('GASからの同期応答がタイムアウトしました。'));
+      }, timeoutMs);
+      function cleanup() {
+        clearTimeout(timer);
+        try { delete window[callbackName]; } catch { window[callbackName] = undefined; }
+        script.remove();
+      }
+      window[callbackName] = (data) => {
+        cleanup();
+        if (!data || data.ok === false) reject(new Error(data?.message || 'GAS同期に失敗しました。'));
+        else resolve(data);
+      };
+      const qs = new URLSearchParams({ action, callback: callbackName, _: String(Date.now()) });
+      Object.entries(params || {}).forEach(([k, v]) => qs.set(k, String(v ?? '')));
+      script.onerror = () => {
+        cleanup();
+        reject(new Error('GAS同期スクリプトの読み込みに失敗しました。Webアプリの公開設定を確認してください。'));
+      };
+      script.src = `${url}${url.includes('?') ? '&' : '?'}${qs.toString()}`;
+      document.head.appendChild(script);
+    });
+  }
+
+  const syncSections = ['current','mind','insights','reflections','premises','future','goals','imports','aiHistory'];
+
+  function mergeEntryArrays(localArr = [], remoteArr = [], section = '', deletions = {}) {
+    const map = new Map();
+    const add = (item, origin) => {
+      if (!item || !item.id) return;
+      const copy = { ...item };
+      const key = copy.id;
+      const existing = map.get(key);
+      const copyTime = dateValue(copy.updatedAt || copy.createdAt || copy.receivedAt);
+      const existingTime = existing ? dateValue(existing.updatedAt || existing.createdAt || existing.receivedAt) : -1;
+      if (!existing || copyTime >= existingTime || origin === 'remote') map.set(key, copy);
+    };
+    localArr.forEach(x => add(x, 'local'));
+    remoteArr.forEach(x => add(x, 'remote'));
+
+    const tombstones = deletions?.[section] || {};
+    Object.entries(tombstones).forEach(([id, deletedAt]) => {
+      const item = map.get(id);
+      const itemTime = item ? dateValue(item.updatedAt || item.createdAt || item.receivedAt) : 0;
+      if (!item || dateValue(deletedAt) >= itemTime) map.delete(id);
+    });
+
+    return Array.from(map.values()).sort((a,b) => dateValue(b.updatedAt || b.createdAt) - dateValue(a.updatedAt || a.createdAt));
+  }
+
+  function mergeRemoteState(remoteState = {}, deletions = {}) {
+    const remote = normalizeState(remoteState || {});
+    const keepSettings = {
+      gasUrl: state.profile.gasUrl || '',
+      gasSyncEnabled: state.profile.gasSyncEnabled !== false,
+      syncPullEnabled: state.profile.syncPullEnabled !== false,
+      aiProvider: state.profile.aiProvider || remote.profile.aiProvider || 'gemini',
+      notebookDocUrl: state.profile.notebookDocUrl || remote.profile.notebookDocUrl || '',
+      notebookDocUpdatedAt: state.profile.notebookDocUpdatedAt || remote.profile.notebookDocUpdatedAt || ''
+    };
+
+    const localProfileTime = dateValue(state.profile.profileUpdatedAt || state.updatedAt);
+    const remoteProfileTime = dateValue(remote.profile.profileUpdatedAt || remote.updatedAt);
+    const profile = remoteProfileTime > localProfileTime ? { ...state.profile, ...remote.profile } : { ...remote.profile, ...state.profile };
+
+    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.3 };
+    syncSections.forEach(section => {
+      merged[section] = mergeEntryArrays(state[section] || [], remote[section] || [], section, deletions);
+    });
+    return normalizeState(merged);
+  }
+
+  async function pullFromSpreadsheet(options = {}) {
+    if (!getGasUrl()) {
+      if (options.manual) showToast('GAS WebアプリURLを先に設定してください', 'warn');
+      return false;
+    }
+    try {
+      if (options.manual) showToast('スプレッドシートから同期データを取得しています…', 'normal');
+      const res = await gasJsonp('syncPull');
+      const next = mergeRemoteState(res.state || {}, res.deletions || {});
+      if (!persistState(next)) return false;
+      state = next;
+      renderAll();
+      if (options.manual) {
+        const counts = res.counts || {};
+        showToast(`同期しました：記録${counts.entries ?? '-'}件 / AI${counts.aiHistory ?? '-'}件`, 'success');
+      }
+      return true;
+    } catch (e) {
+      console.error('Pull sync failed', e);
+      if (options.manual) showToast(`同期に失敗しました：${e.message || e}`, 'error');
+      return false;
+    }
+  }
+
+  async function twoWaySync() {
+    if (!getGasUrl()) return showToast('GAS WebアプリURLを先に設定してください', 'warn');
+    showToast('この端末のデータを送信してから、スプレッドシート側を取得します…', 'normal');
+    await syncAllToSpreadsheet();
+    setTimeout(() => pullFromSpreadsheet({ manual: true }), 1200);
+  }
+
+  function scheduleAutoPull() {
+    if (!isPullSyncEnabled()) return;
+    setTimeout(() => pullFromSpreadsheet({ manual: false }), 800);
   }
 
   function normalizeForSheet(section, record = {}) {
@@ -522,9 +649,11 @@
   function saveGasSettings() {
     const url = document.getElementById('gasUrlInput')?.value.trim() || '';
     const enabled = Boolean(document.getElementById('gasEnabledInput')?.checked);
+    const pullEnabled = Boolean(document.getElementById('gasPullEnabledInput')?.checked);
     updateState(s => {
       s.profile.gasUrl = url;
       s.profile.gasSyncEnabled = enabled;
+      s.profile.syncPullEnabled = pullEnabled;
     }, 'GAS設定を保存しました');
   }
 
@@ -1462,9 +1591,12 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
             <div class="space-y-3">
               <div><label class="field-label">GAS WebアプリURL</label><input id="gasUrlInput" class="input font-mono text-xs" type="url" placeholder="https://script.google.com/macros/s/xxxx/exec" value="${escapeHtml(state.profile.gasUrl || '')}"></div>
               <label class="flex items-center gap-2 text-sm font-black text-slate-700"><input id="gasEnabledInput" type="checkbox" class="w-5 h-5" ${state.profile.gasSyncEnabled !== false ? 'checked' : ''}> 新規保存・編集・削除・AI履歴を自動送信する</label>
+              <label class="flex items-center gap-2 text-sm font-black text-slate-700"><input id="gasPullEnabledInput" type="checkbox" class="w-5 h-5" ${state.profile.syncPullEnabled !== false ? 'checked' : ''}> 起動時にスプレッドシートから自動取得する</label>
               <button id="saveGasSettingsBtn" class="btn-primary btn-blue w-full"><i data-lucide="save" class="w-5 h-5"></i> GAS設定を保存</button>
               <button id="testGasBtn" class="btn-soft w-full"><i data-lucide="send" class="w-5 h-5"></i> 接続テストを送信</button>
-              <button id="syncAllGasBtn" class="btn-soft w-full"><i data-lucide="refresh-cw" class="w-5 h-5"></i> 既存データを全件スプレッドシートへ送信</button>
+              <button id="syncAllGasBtn" class="btn-soft w-full"><i data-lucide="cloud-upload" class="w-5 h-5"></i> この端末のデータを全件送信</button>
+              <button id="pullGasBtn" class="btn-soft w-full"><i data-lucide="cloud-download" class="w-5 h-5"></i> スプレッドシートからこの端末へ同期</button>
+              <button id="twoWaySyncBtn" class="btn-primary btn-blue w-full"><i data-lucide="refresh-cw" class="w-5 h-5"></i> 完全同期（送信→取得）</button>
             </div>
           </div>
           <div class="panel border-sky-700">
@@ -1506,6 +1638,8 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
               ${statusRow('推定サイズ', `${(size/1024).toFixed(1)} KB`)}
               ${statusRow('自動バックアップ', localStorage.getItem(BACKUP_KEY) ? 'あり' : 'なし')}
               ${statusRow('GAS連携', getGasUrl() ? (state.profile.gasSyncEnabled !== false ? '自動送信ON' : 'URL設定済み / 自動送信OFF') : '未設定')}
+              ${statusRow('端末同期', getGasUrl() ? (state.profile.syncPullEnabled !== false ? '起動時自動取得ON' : '手動取得のみ') : 'GAS URL未設定')}
+              ${statusRow('最終同期', state.profile.lastSyncAt ? new Date(state.profile.lastSyncAt).toLocaleString('ja-JP') : '未同期')}
               ${statusRow('NotebookLM連携', getGasUrl() ? 'NotebookLM_Source自動追記 / Docs生成可' : 'GAS URL未設定')}
               ${statusRow('GAS URL', getGasUrl() || '未設定')}
               ${statusRow('AIモデル', 'Gemini: gemini-2.5-flash / ChatGPT: gpt-5.4-mini（GAS側固定）')}
@@ -1516,7 +1650,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
             <div class="mt-6 rounded-2xl bg-slate-50 border-2 border-slate-200 p-4 text-sm font-bold text-slate-700 leading-relaxed">
               <p class="font-black text-slate-900 mb-2">安全運用の目安</p>
               <p>・大きな編集前はJSONバックアップ</p>
-              <p>・スマホとPCでは保存領域が別です。同じURLでもデータは端末ごとに別管理です。</p>
+              <p>・v4.3ではGAS URLを設定すると、スマホとPCのデータをスプレッドシート経由で同期できます。</p>
               <p>・GAS連携を設定すると、入力データをGoogleスプレッドシートにも保存できます。</p>
             </div>
           </div>
@@ -1529,6 +1663,8 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     document.getElementById('saveGasSettingsBtn').onclick = saveGasSettings;
     document.getElementById('testGasBtn').onclick = testGasConnection;
     document.getElementById('syncAllGasBtn').onclick = syncAllToSpreadsheet;
+    document.getElementById('pullGasBtn').onclick = () => pullFromSpreadsheet({ manual: true });
+    document.getElementById('twoWaySyncBtn').onclick = twoWaySync;
     document.getElementById('refreshNotebookSourceBtn').onclick = requestNotebookSourceRefresh;
     document.getElementById('openNotebookDocBtn').onclick = openNotebookDocGenerator;
     document.getElementById('resetBtn').onclick = resetAll;
@@ -1635,10 +1771,10 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
   function setupHeaderButtons() {
     document.getElementById('quickBackupBtn').onclick = () => { switchTab('backup'); setTimeout(exportJson, 100); };
     document.getElementById('quickAiBtn').onclick = () => switchTab('ai');
-    document.getElementById('quickSaveBtn').onclick = () => showToast(`最終保存：${new Date(state.updatedAt).toLocaleString('ja-JP')} / GAS：${isGasSyncEnabled() ? 'ON' : 'OFF'}`, 'success');
+    document.getElementById('quickSaveBtn').onclick = () => showToast(`最終保存：${new Date(state.updatedAt).toLocaleString('ja-JP')} / GAS：${isGasSyncEnabled() ? 'ON' : 'OFF'} / 同期：${isPullSyncEnabled() ? 'ON' : 'OFF'}`, 'success');
   }
 
-  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, renderMindMap, openNotebookDocGenerator, state: () => state };
+  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, pullFromSpreadsheet, twoWaySync, renderMindMap, openNotebookDocGenerator, state: () => state };
 
   document.addEventListener('DOMContentLoaded', () => {
     injectEnhancedUiStyles();
@@ -1646,5 +1782,6 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     renderAll();
     bindForms();
     switchTab('home');
+    scheduleAutoPull();
   });
 })();
