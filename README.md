@@ -1,8 +1,8 @@
-# Life Compass Coach｜人生統合AIコーチ v4.3 NotebookLM対応
+# Life Compass Coach｜人生統合AIコーチ v4.3.1 NotebookLM対応
 
 GitHub Pages + GAS + Google スプレッドシートで動く、人生記録・AIコーチング・マインドマップ可視化ツールです。
 
-## v4.3で追加したこと
+## v4.3.1で追加したこと
 
 - NotebookLMにそのまま追加しやすい `LifeCompass_NotebookLM_Source` シートを自動生成
 - 保存データを通常の保存シートだけでなく、NotebookLM向け整理シートにも自動追記
@@ -68,7 +68,7 @@ AIを使う場合：
 - NotebookLMはスプレッドシート更新を参照できますが、反映タイミングにラグが出る可能性があります。重要な分析前はNotebookLM側でソースの再確認や再生成をしてください。
 
 
-## v4.3 追加：PC・スマホ同期
+## v4.3.1 追加：PC・スマホ同期
 
 この版では、Googleスプレッドシートを中心にして、PCとスマホのデータを同期できます。
 
@@ -89,3 +89,9 @@ AIを使う場合：
 - GAS URLだけは端末ごとに一度設定してください。
 - 念のため、大きな編集前はJSONバックアップを推奨します。
 
+
+
+## v4.3.1 修正
+- GAS同期取得の doGet を try/catch 化し、GAS側エラーを画面に返せるようにしました。
+- `action=ping` の軽量診断を追加しました。
+- 接続テスト時にJSONP読み込み確認を先に行うようにしました。

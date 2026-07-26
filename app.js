@@ -19,7 +19,7 @@
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
   const emptyData = () => ({
-    version: 4.3,
+    version: 4.311,
     updatedAt: nowIso(),
     createdAt: nowIso(),
     profile: {
@@ -430,7 +430,7 @@
     return Number.isFinite(t) ? t : 0;
   }
 
-  function gasJsonp(action, params = {}, timeoutMs = 25000) {
+  function gasJsonp(action, params = {}, timeoutMs = 35000) {
     const url = getGasUrl();
     if (!url) return Promise.reject(new Error('GAS WebアプリURLが未設定です。'));
     return new Promise((resolve, reject) => {
@@ -454,7 +454,7 @@
       Object.entries(params || {}).forEach(([k, v]) => qs.set(k, String(v ?? '')));
       script.onerror = () => {
         cleanup();
-        reject(new Error('GAS同期スクリプトの読み込みに失敗しました。Webアプリの公開設定を確認してください。'));
+        reject(new Error('GAS同期スクリプトの読み込みに失敗しました。/exec URL、Webアプリ公開設定、再デプロイ、初回承認を確認してください。'));
       };
       script.src = `${url}${url.includes('?') ? '&' : '?'}${qs.toString()}`;
       document.head.appendChild(script);
@@ -502,7 +502,7 @@
     const remoteProfileTime = dateValue(remote.profile.profileUpdatedAt || remote.updatedAt);
     const profile = remoteProfileTime > localProfileTime ? { ...state.profile, ...remote.profile } : { ...remote.profile, ...state.profile };
 
-    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.3 };
+    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.311 };
     syncSections.forEach(section => {
       merged[section] = mergeEntryArrays(state[section] || [], remote[section] || [], section, deletions);
     });
@@ -661,6 +661,14 @@
     const url = document.getElementById('gasUrlInput')?.value.trim() || getGasUrl();
     if (!url) return showToast('GAS WebアプリURLを入力してください', 'warn');
     updateState(s => { s.profile.gasUrl = url; }, null);
+    try {
+      const ping = await gasJsonp('ping', {}, 15000);
+      if (!ping || ping.ok === false) throw new Error(ping?.message || 'GAS pingに失敗しました。');
+      showToast('GAS公開URLの読み込み確認OK。続けて保存テストを送信します。', 'success');
+    } catch (e) {
+      showToast(`GAS公開URLの読み込み確認に失敗：${e.message || e}`, 'error');
+      return;
+    }
     await sendToSpreadsheet('test', 'system', { id: uid(), title: '接続テスト', body: 'Life Compass Coachからの接続テストです。', createdAt: nowIso(), updatedAt: nowIso() }, { manual: true });
   }
 
