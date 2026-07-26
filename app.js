@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'sync-v4_3_2-20260726';
+  const LIFE_COMPASS_UI_VERSION = 'sync-v4_3_4-20260726';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -19,7 +19,7 @@
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
   const emptyData = () => ({
-    version: 4.311,
+    version: 4.34,
     updatedAt: nowIso(),
     createdAt: nowIso(),
     profile: {
@@ -343,7 +343,7 @@
     ['current','mind','insights','reflections','premises','future','goals','imports','aiHistory'].forEach(k => {
       merged[k] = Array.isArray(data[k]) ? data[k] : [];
     });
-    merged.version = 4.3;
+    merged.version = 4.34;
     return merged;
   }
 
@@ -373,6 +373,7 @@
   }
 
   function persistState(next = state, options = {}) {
+    dedupeLocalState(next);
     next.updatedAt = nowIso();
     const text = JSON.stringify(next);
     try {
@@ -463,6 +464,33 @@
 
   const syncSections = ['current','mind','insights','reflections','premises','future','goals','imports','aiHistory'];
 
+  function dedupeSectionArray(arr = []) {
+    const map = new Map();
+    (Array.isArray(arr) ? arr : []).forEach(item => {
+      if (!item || !item.id) return;
+      const current = map.get(item.id);
+      const itemTime = dateValue(item.updatedAt || item.createdAt || item.receivedAt);
+      const currentTime = current ? dateValue(current.updatedAt || current.createdAt || current.receivedAt) : -1;
+      if (!current || itemTime >= currentTime) map.set(item.id, item);
+    });
+    return Array.from(map.values()).sort((a,b) => dateValue(b.updatedAt || b.createdAt) - dateValue(a.updatedAt || a.createdAt));
+  }
+
+  function dedupeLocalState(next = state) {
+    syncSections.forEach(section => {
+      if (Array.isArray(next[section])) next[section] = dedupeSectionArray(next[section]);
+    });
+    return next;
+  }
+
+  function sectionCountsOf(data = state) {
+    const counts = {};
+    syncSections.forEach(section => counts[section] = Array.isArray(data[section]) ? dedupeSectionArray(data[section]).length : 0);
+    counts.entries = ['current','mind','insights','reflections','premises','future','goals','imports'].reduce((sum, k) => sum + (counts[k] || 0), 0);
+    counts.profile = hasProfileData(data.profile || {}) ? 1 : 0;
+    return counts;
+  }
+
   function mergeEntryArrays(localArr = [], remoteArr = [], section = '', deletions = {}) {
     const map = new Map();
     const add = (item, origin) => {
@@ -502,7 +530,7 @@
     const remoteProfileTime = dateValue(remote.profile.profileUpdatedAt || remote.updatedAt);
     const profile = remoteProfileTime > localProfileTime ? { ...state.profile, ...remote.profile } : { ...remote.profile, ...state.profile };
 
-    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.311 };
+    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.34 };
     syncSections.forEach(section => {
       merged[section] = mergeEntryArrays(state[section] || [], remote[section] || [], section, deletions);
     });
@@ -523,7 +551,7 @@
       renderAll();
       if (options.manual) {
         const counts = res.counts || {};
-        showToast(`同期しました：記録${counts.entries ?? '-'}件 / AI${counts.aiHistory ?? '-'}件`, 'success');
+        showToast(`同期しました：スプレッドシート記録${counts.entries ?? '-'}件 / AI${counts.aiHistory ?? '-'}件 → 端末内 記録${sectionCountsOf(state).entries}件 / AI${sectionCountsOf(state).aiHistory}件`, 'success');
       }
       return true;
     } catch (e) {
@@ -535,9 +563,96 @@
 
   async function twoWaySync() {
     if (!getGasUrl()) return showToast('GAS WebアプリURLを先に設定してください', 'warn');
-    showToast('この端末のデータを送信してから、スプレッドシート側を取得します…', 'normal');
-    await syncAllToSpreadsheet();
-    setTimeout(() => pullFromSpreadsheet({ manual: true }), 1200);
+    showToast('完全同期を開始します。先にスプレッドシートを取得し、端末データと統合してから再送信します…', 'normal');
+    const pulled = await pullFromSpreadsheet({ manual: false });
+    if (!pulled) {
+      showToast('完全同期を中止しました。先にスプレッドシートから取得できる状態にしてください。', 'error');
+      return false;
+    }
+    dedupeLocalState(state);
+    persistState(state, { silent: true });
+    await syncAllToSpreadsheet({ silent: true });
+    await new Promise(resolve => setTimeout(resolve, 2600));
+    await pullFromSpreadsheet({ manual: false });
+    const c = sectionCountsOf(state);
+    showToast(`完全同期完了：記録${c.entries}件 / AI${c.aiHistory}件 / プロフィール${c.profile ? 'あり' : '未入力'}。端末ごとに件数が違う場合は「クラウド正本で取り込み」を押してください。`, 'success');
+    return true;
+  }
+
+  function applyRemoteAsAuthoritative(remoteState = {}) {
+    const remote = normalizeState(remoteState || {});
+    const keepSettings = {
+      gasUrl: state.profile.gasUrl || '',
+      gasSyncEnabled: state.profile.gasSyncEnabled !== false,
+      syncPullEnabled: state.profile.syncPullEnabled !== false,
+      aiProvider: state.profile.aiProvider || remote.profile.aiProvider || 'gemini',
+      notebookDocUrl: state.profile.notebookDocUrl || remote.profile.notebookDocUrl || '',
+      notebookDocUpdatedAt: state.profile.notebookDocUpdatedAt || remote.profile.notebookDocUpdatedAt || ''
+    };
+    const next = { ...remote, profile: { ...(remote.profile || {}), ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.34 };
+    dedupeLocalState(next);
+    return normalizeState(next);
+  }
+
+  async function pullCloudAsSourceOfTruth(options = {}) {
+    if (!getGasUrl()) return showToast('GAS WebアプリURLを先に設定してください', 'warn');
+    const ok = options.skipConfirm || confirm(`この端末の表示データを、スプレッドシート側のデータでそろえます。
+
+端末だけに残っていて、まだスプレッドシートへ送っていない記録は表示から消える可能性があります。先に「完全同期」を実行してから使うのがおすすめです。
+
+続けますか？`);
+    if (!ok) return false;
+    try {
+      showToast('クラウド正本を取得して、この端末の件数をそろえています…', 'normal');
+      const res = await gasJsonp('syncPull', {}, 45000);
+      const next = applyRemoteAsAuthoritative(res.state || {});
+      if (!persistState(next)) return false;
+      state = next;
+      renderAll();
+      const c = sectionCountsOf(state);
+      showToast(`クラウド正本で取り込み完了：記録${c.entries}件 / AI${c.aiHistory}件 / プロフィール${c.profile ? 'あり' : '未入力'}`, 'success');
+      return true;
+    } catch (e) {
+      console.error('Cloud authoritative pull failed', e);
+      showToast(`クラウド正本取り込みに失敗：${e.message || e}`, 'error');
+      return false;
+    }
+  }
+
+  async function repairDeviceMismatch() {
+    if (!getGasUrl()) return showToast('GAS WebアプリURLを先に設定してください', 'warn');
+    const ok = confirm(`件数ずれ修復を実行します。
+
+手順：
+1. この端末の全データをスプレッドシートへ送信
+2. 反映を待つ
+3. スプレッドシート側を正本としてこの端末へ取り込み
+
+PCとスマホの両方で1回ずつ実行すると件数がそろいやすくなります。続けますか？`);
+    if (!ok) return false;
+    showToast('件数ずれ修復中：この端末の全データを送信しています…', 'normal');
+    await syncAllToSpreadsheet({ silent: true });
+    showToast('送信後の反映待ちです…', 'normal');
+    await new Promise(resolve => setTimeout(resolve, 3600));
+    return pullCloudAsSourceOfTruth({ skipConfirm: true });
+  }
+
+  async function checkCloudCounts() {
+    if (!getGasUrl()) return showToast('GAS WebアプリURLを先に設定してください', 'warn');
+    try {
+      const res = await gasJsonp('syncPull', {}, 45000);
+      const cloud = res.counts || {};
+      const local = sectionCountsOf(state);
+      const sec = cloud.sections || {};
+      const lines = [
+        `端末: 記録${local.entries}件 / AI${local.aiHistory}件 / プロフィール${local.profile ? 'あり' : '未入力'}`,
+        `シート: 記録${cloud.entries ?? '-'}件 / AI${cloud.aiHistory ?? '-'}件 / プロフィール${cloud.profile ? 'あり' : '未入力'}`,
+        `内訳: 現在地${sec.current ?? '-'} / 心${sec.mind ?? '-'} / 気づき${sec.insights ?? '-'} / 反省${sec.reflections ?? '-'} / 前提${sec.premises ?? '-'} / 未来${sec.future ?? '-'} / 目標${sec.goals ?? '-'} / 履歴${sec.imports ?? '-'}`
+      ];
+      alert(lines.join('\n'));
+    } catch (e) {
+      showToast(`同期診断に失敗：${e.message || e}`, 'error');
+    }
   }
 
   function scheduleAutoPull() {
@@ -632,18 +747,24 @@
     sendToSpreadsheet(action, section, record);
   }
 
-  async function syncAllToSpreadsheet() {
-    if (!getGasUrl()) return showToast('GAS WebアプリURLを先に設定してください', 'warn');
+  async function syncAllToSpreadsheet(options = {}) {
+    if (!getGasUrl()) {
+      if (!options.silent) showToast('GAS WebアプリURLを先に設定してください', 'warn');
+      return false;
+    }
+    dedupeLocalState(state);
+    persistState(state, { silent: true });
     const all = getAllEntries();
-    showToast(`全データ ${all.length + (hasProfileData() ? 1 : 0)}件を送信します`, 'normal');
+    if (!options.silent) showToast(`全データ ${all.length + (hasProfileData() ? 1 : 0)}件を送信します`, 'normal');
     if (hasProfileData()) await sendToSpreadsheet('syncAll', 'profile', buildProfileRecord());
     for (const entry of all) {
       await sendToSpreadsheet('syncAll', entry.section, entry);
     }
-    for (const history of state.aiHistory) {
+    for (const history of dedupeSectionArray(state.aiHistory)) {
       await sendToSpreadsheet('syncAll', 'aiHistory', history);
     }
-    showToast('全データ送信が完了しました。NotebookLM_Sourceシートにも反映されます。', 'success');
+    if (!options.silent) showToast('全データ送信が完了しました。NotebookLM_Sourceシートにも反映されます。', 'success');
+    return true;
   }
 
   function saveGasSettings() {
@@ -1605,6 +1726,9 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
               <button id="syncAllGasBtn" class="btn-soft w-full"><i data-lucide="cloud-upload" class="w-5 h-5"></i> この端末のデータを全件送信</button>
               <button id="pullGasBtn" class="btn-soft w-full"><i data-lucide="cloud-download" class="w-5 h-5"></i> スプレッドシートからこの端末へ同期</button>
               <button id="twoWaySyncBtn" class="btn-primary btn-blue w-full"><i data-lucide="refresh-cw" class="w-5 h-5"></i> 完全同期（送信→取得）</button>
+              <button id="repairSyncBtn" class="btn-soft w-full border-amber-300 bg-amber-50 text-amber-900"><i data-lucide="wrench" class="w-5 h-5"></i> 件数ずれを修復する</button>
+              <button id="cloudTruthBtn" class="btn-soft w-full border-indigo-300 bg-indigo-50 text-indigo-900"><i data-lucide="cloud-check" class="w-5 h-5"></i> クラウド正本で取り込み</button>
+              <button id="checkCloudCountsBtn" class="btn-soft w-full"><i data-lucide="list-checks" class="w-5 h-5"></i> 端末とシートの件数を確認</button>
             </div>
           </div>
           <div class="panel border-sky-700">
@@ -1658,7 +1782,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
             <div class="mt-6 rounded-2xl bg-slate-50 border-2 border-slate-200 p-4 text-sm font-bold text-slate-700 leading-relaxed">
               <p class="font-black text-slate-900 mb-2">安全運用の目安</p>
               <p>・大きな編集前はJSONバックアップ</p>
-              <p>・v4.3.2ではGAS URLを設定すると、スマホとPCのデータをスプレッドシート経由で同期できます。同期だけならDrive権限なしで動きます。</p>
+              <p>・v4.3.4では、通常の完全同期に加えて「件数ずれ修復」と「クラウド正本で取り込み」を追加しています。PCとスマホの数字が違う時は、両端末で件数ずれ修復を1回ずつ実行してください。</p>
               <p>・GAS連携を設定すると、入力データをGoogleスプレッドシートにも保存できます。</p>
             </div>
           </div>
@@ -1673,6 +1797,9 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     document.getElementById('syncAllGasBtn').onclick = syncAllToSpreadsheet;
     document.getElementById('pullGasBtn').onclick = () => pullFromSpreadsheet({ manual: true });
     document.getElementById('twoWaySyncBtn').onclick = twoWaySync;
+    document.getElementById('repairSyncBtn').onclick = repairDeviceMismatch;
+    document.getElementById('cloudTruthBtn').onclick = pullCloudAsSourceOfTruth;
+    document.getElementById('checkCloudCountsBtn').onclick = checkCloudCounts;
     document.getElementById('refreshNotebookSourceBtn').onclick = requestNotebookSourceRefresh;
     document.getElementById('openNotebookDocBtn').onclick = openNotebookDocGenerator;
     document.getElementById('resetBtn').onclick = resetAll;
@@ -1782,7 +1909,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     document.getElementById('quickSaveBtn').onclick = () => showToast(`最終保存：${new Date(state.updatedAt).toLocaleString('ja-JP')} / GAS：${isGasSyncEnabled() ? 'ON' : 'OFF'} / 同期：${isPullSyncEnabled() ? 'ON' : 'OFF'}`, 'success');
   }
 
-  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, pullFromSpreadsheet, twoWaySync, renderMindMap, openNotebookDocGenerator, state: () => state };
+  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, pullFromSpreadsheet, twoWaySync, repairDeviceMismatch, pullCloudAsSourceOfTruth, checkCloudCounts, renderMindMap, openNotebookDocGenerator, state: () => state };
 
   document.addEventListener('DOMContentLoaded', () => {
     injectEnhancedUiStyles();
