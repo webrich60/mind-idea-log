@@ -1,8 +1,8 @@
-# Life Compass Coach｜人生統合AIコーチ v4.3.1 NotebookLM対応
+# Life Compass Coach｜人生統合AIコーチ v4.3.2.2 NotebookLM対応
 
 GitHub Pages + GAS + Google スプレッドシートで動く、人生記録・AIコーチング・マインドマップ可視化ツールです。
 
-## v4.3.1で追加したこと
+## v4.3.2.2で追加したこと
 
 - NotebookLMにそのまま追加しやすい `LifeCompass_NotebookLM_Source` シートを自動生成
 - 保存データを通常の保存シートだけでなく、NotebookLM向け整理シートにも自動追記
@@ -68,7 +68,7 @@ AIを使う場合：
 - NotebookLMはスプレッドシート更新を参照できますが、反映タイミングにラグが出る可能性があります。重要な分析前はNotebookLM側でソースの再確認や再生成をしてください。
 
 
-## v4.3.1 追加：PC・スマホ同期
+## v4.3.2.2 追加：PC・スマホ同期
 
 この版では、Googleスプレッドシートを中心にして、PCとスマホのデータを同期できます。
 
@@ -91,7 +91,20 @@ AIを使う場合：
 
 
 
-## v4.3.1 修正
+## v4.3.2.2 修正
 - GAS同期取得の doGet を try/catch 化し、GAS側エラーを画面に返せるようにしました。
 - `action=ping` の軽量診断を追加しました。
 - 接続テスト時にJSONP読み込み確認を先に行うようにしました。
+
+
+## v4.3.2 追加メモ：Drive権限エラー対策
+
+v4.3.2では、PC/スマホ同期だけならDrive権限を要求しないようにしました。
+
+- 通常同期に必要：`setupLifeCompassSheet()` を実行
+- 写真Drive保存 / NotebookLM用Google Docs生成も使う場合：`authorizeLifeCompassDrive()` を一度実行
+
+エラー例：
+`DriveApp.getFolderById を呼び出す権限がありません`
+
+この場合は Apps Script エディタ上部の関数選択で `authorizeLifeCompassDrive` を選び、実行してGoogle承認を完了してください。その後、Webアプリを新しいバージョンで再デプロイしてください。

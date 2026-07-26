@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'sync-v4_3-20260726';
+  const LIFE_COMPASS_UI_VERSION = 'sync-v4_3_2-20260726';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -1658,7 +1658,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
             <div class="mt-6 rounded-2xl bg-slate-50 border-2 border-slate-200 p-4 text-sm font-bold text-slate-700 leading-relaxed">
               <p class="font-black text-slate-900 mb-2">安全運用の目安</p>
               <p>・大きな編集前はJSONバックアップ</p>
-              <p>・v4.3ではGAS URLを設定すると、スマホとPCのデータをスプレッドシート経由で同期できます。</p>
+              <p>・v4.3.2ではGAS URLを設定すると、スマホとPCのデータをスプレッドシート経由で同期できます。同期だけならDrive権限なしで動きます。</p>
               <p>・GAS連携を設定すると、入力データをGoogleスプレッドシートにも保存できます。</p>
             </div>
           </div>
