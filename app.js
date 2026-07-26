@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'ui-color-inline-fixed-v3-20260725';
+  const LIFE_COMPASS_UI_VERSION = 'ultimate-history-map-v4-20260726';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -19,7 +19,7 @@
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
   const emptyData = () => ({
-    version: 3,
+    version: 4,
     updatedAt: nowIso(),
     createdAt: nowIso(),
     profile: {
@@ -36,6 +36,7 @@
     premises: [],
     future: [],
     goals: [],
+    imports: [],
     aiHistory: []
   });
 
@@ -51,6 +52,8 @@
     { id:'premise', label:'前提ノート', icon:'scale' },
     { id:'future', label:'未来設計', icon:'mountain-snow' },
     { id:'goals', label:'目標・目的', icon:'target' },
+    { id:'import', label:'履歴インポート', icon:'file-input' },
+    { id:'map', label:'マインドマップ', icon:'git-branch' },
     { id:'ai', label:'AIコーチ', icon:'sparkles' },
     { id:'backup', label:'バックアップ', icon:'database' }
   ];
@@ -62,7 +65,8 @@
     reflection: ['判断ミス', '先延ばし', 'お金の使い方', '体調管理', '人間関係', '仕事/事業', '生活習慣', 'その他'],
     premise: ['お金', '健康', '行動', '人間関係', '仕事/事業', '安心', '自己評価', 'その他'],
     future: ['行きたい場所', 'やりたい事', '手に入れたい物', 'お金', '健康', '安心', '暮らし', '人間関係', '仕事/事業'],
-    goal: ['人生目的', '健康', 'お金', '仕事/事業', '家族', '暮らし', '学び', '旅', '安心']
+    goal: ['人生目的', '健康', 'お金', '仕事/事業', '家族', '暮らし', '学び', '旅', '安心'],
+    history: ['人生履歴', '過去ログ', '会話メモ', '病歴・健康', '実績', '家族・介護', '仕事・事業', '学習記録', '自由メモ']
   };
 
 
@@ -78,6 +82,9 @@
     future: { className: 'frame-theme-future', label: '未来' },
     goals: { className: 'frame-theme-goal', label: '目標' },
     goal: { className: 'frame-theme-goal', label: '目標' },
+    imports: { className: 'frame-theme-import', label: '履歴' },
+    import: { className: 'frame-theme-import', label: '履歴' },
+    map: { className: 'frame-theme-map', label: 'マップ' },
     ai: { className: 'frame-theme-ai', label: 'AI履歴' },
     aiHistory: { className: 'frame-theme-ai', label: 'AI履歴' },
     backup: { className: 'frame-theme-backup', label: 'バックアップ' },
@@ -102,6 +109,9 @@
       future: { bg: '#ecfdf5', bg2: '#dcfce7', border: '#86efac', icon: '#16a34a' },
       goals: { bg: '#eff6ff', bg2: '#dbeafe', border: '#60a5fa', icon: '#1d4ed8' },
       goal: { bg: '#eff6ff', bg2: '#dbeafe', border: '#60a5fa', icon: '#1d4ed8' },
+      imports: { bg: '#f0fdfa', bg2: '#ccfbf1', border: '#5eead4', icon: '#0f766e' },
+      import: { bg: '#f0fdfa', bg2: '#ccfbf1', border: '#5eead4', icon: '#0f766e' },
+      map: { bg: '#faf5ff', bg2: '#f3e8ff', border: '#d8b4fe', icon: '#9333ea' },
       ai: { bg: '#f1f5f9', bg2: '#e2e8f0', border: '#94a3b8', icon: '#475569' },
       aiHistory: { bg: '#f1f5f9', bg2: '#e2e8f0', border: '#94a3b8', icon: '#475569' },
       backup: { bg: '#eff6ff', bg2: '#e0f2fe', border: '#7dd3fc', icon: '#0369a1' },
@@ -116,6 +126,8 @@
       else if (key.includes('前提')) s = map.premise;
       else if (key.includes('未来')) s = map.future;
       else if (key.includes('目標')) s = map.goals;
+      else if (key.includes('履歴')) s = map.imports;
+      else if (key.includes('マップ')) s = map.map;
       else if (key.includes('AI')) s = map.ai;
       else s = map.default;
     }
@@ -135,6 +147,8 @@
     if (text.includes('前提')) return frameThemeClass('premise');
     if (text.includes('未来')) return frameThemeClass('future');
     if (text.includes('目標')) return frameThemeClass('goals');
+    if (text.includes('履歴')) return frameThemeClass('imports');
+    if (text.includes('マップ')) return frameThemeClass('map');
     if (text.includes('AI')) return frameThemeClass('ai');
     return 'frame-theme-default';
   }
@@ -165,6 +179,8 @@
       .frame-theme-premise { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%); border-color: #c4b5fd; }
       .frame-theme-future { background: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%); border-color: #86efac; }
       .frame-theme-goal { background: linear-gradient(135deg, #eef6ff 0%, #dbeafe 100%); border-color: #60a5fa; }
+      .frame-theme-import { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border-color: #5eead4; }
+      .frame-theme-map { background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); border-color: #d8b4fe; }
       .frame-theme-ai { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); border-color: #94a3b8; }
       .frame-theme-backup { background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%); border-color: #7dd3fc; }
       .frame-theme-default { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-color: #cbd5e1; }
@@ -177,6 +193,8 @@
       .dashboard-card.frame-theme-premise, .home-info-card.frame-theme-premise, .mini-count-card.frame-theme-premise { background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%) !important; border-color: #c4b5fd !important; }
       .dashboard-card.frame-theme-future, .home-info-card.frame-theme-future, .mini-count-card.frame-theme-future { background: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%) !important; border-color: #86efac !important; }
       .dashboard-card.frame-theme-goal, .home-info-card.frame-theme-goal, .mini-count-card.frame-theme-goal { background: linear-gradient(135deg, #eef6ff 0%, #dbeafe 100%) !important; border-color: #60a5fa !important; }
+      .dashboard-card.frame-theme-import, .home-info-card.frame-theme-import, .mini-count-card.frame-theme-import { background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%) !important; border-color: #5eead4 !important; }
+      .dashboard-card.frame-theme-map, .home-info-card.frame-theme-map, .mini-count-card.frame-theme-map { background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important; border-color: #d8b4fe !important; }
       .dashboard-card.frame-theme-ai, .home-info-card.frame-theme-ai, .mini-count-card.frame-theme-ai { background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important; border-color: #94a3b8 !important; }
       .dashboard-card.frame-theme-backup, .home-info-card.frame-theme-backup, .mini-count-card.frame-theme-backup { background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%) !important; border-color: #7dd3fc !important; }
       .dashboard-card .frame-icon-wrap, .mini-count-card .mini-icon { background: rgba(255,255,255,.72) !important; }
@@ -206,6 +224,8 @@
       .frame-theme-premise .frame-icon, .frame-theme-premise .frame-title { color: #6d28d9; }
       .frame-theme-future .frame-icon, .frame-theme-future .frame-title { color: #15803d; }
       .frame-theme-goal .frame-icon, .frame-theme-goal .frame-title { color: #1e40af; }
+      .frame-theme-import .frame-icon, .frame-theme-import .frame-title { color: #0f766e; }
+      .frame-theme-map .frame-icon, .frame-theme-map .frame-title { color: #9333ea; }
       .frame-theme-ai .frame-icon, .frame-theme-ai .frame-title { color: #334155; }
       .frame-theme-backup .frame-icon, .frame-theme-backup .frame-title { color: #0369a1; }
 
@@ -223,6 +243,21 @@
       }
       .mini-count-card .mini-icon svg { width: 22px; height: 22px; stroke-width: 2.4; }
       .tab-icon, .tab-icon svg { width: 22px; height: 22px; stroke-width: 2.35; }
+
+
+      .tab-btn { border-radius: 1rem 1rem 0 0; border: 2px solid transparent; border-bottom-width: 4px; margin-top: .25rem; }
+      .tab-btn.active { transform: translateY(1px); box-shadow: inset 0 -3px 0 rgba(29,78,216,.9); }
+      .entry-media { display:grid; grid-template-columns: 1fr; gap:.75rem; margin-top:.85rem; }
+      @media (min-width: 640px) { .entry-media { grid-template-columns: 140px 1fr; align-items:start; } }
+      .entry-media img { width:100%; max-height:180px; object-fit:cover; border-radius:1rem; border:2px solid #cbd5e1; background:#f8fafc; }
+      .media-link { display:inline-flex; align-items:center; gap:.35rem; font-size:.82rem; font-weight:900; color:#1d4ed8; background:#eff6ff; border:2px solid #bfdbfe; border-radius:.8rem; padding:.45rem .65rem; word-break:break-all; }
+      .mindmap-wrap { position:relative; min-height:660px; overflow:auto; border-radius:1.5rem; border:2px solid #cbd5e1; background: radial-gradient(circle at center, #ffffff 0%, #eff6ff 45%, #eef2ff 100%); }
+      .mindmap-svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+      .mind-node { position:absolute; transform:translate(-50%, -50%); min-width:150px; max-width:220px; border:2px solid #cbd5e1; border-radius:1.2rem; padding:.8rem; background:#fff; box-shadow:0 10px 24px rgba(15,23,42,.10); font-weight:900; text-align:center; }
+      .mind-node.center { min-width:180px; background:linear-gradient(135deg,#1d4ed8,#38bdf8); color:white; border-color:#1e3a8a; }
+      .mind-node.child { min-width:120px; max-width:170px; font-size:.72rem; font-weight:800; padding:.55rem; opacity:.96; }
+      .mind-node .node-count { display:inline-flex; align-items:center; justify-content:center; min-width:2rem; height:2rem; border-radius:999px; background:rgba(255,255,255,.72); color:#0f172a; margin-top:.4rem; font-size:.95rem; }
+      @media (max-width: 768px) { .mindmap-wrap { min-height:760px; } .mind-node { min-width:125px; max-width:170px; font-size:.78rem; } .mind-node.center { min-width:145px; } .mind-node.child { min-width:100px; max-width:130px; } }
 
       @media (max-width: 768px) {
         .dashboard-card { min-height: 104px; padding: 1rem; border-radius: 1.15rem; }
@@ -279,10 +314,10 @@
     const merged = { ...base, ...data };
     merged.profile = { ...base.profile, ...(data.profile || {}) };
     delete merged.profile.geminiKey;
-    ['current','mind','insights','reflections','premises','future','goals','aiHistory'].forEach(k => {
+    ['current','mind','insights','reflections','premises','future','goals','imports','aiHistory'].forEach(k => {
       merged[k] = Array.isArray(data[k]) ? data[k] : [];
     });
-    merged.version = 3;
+    merged.version = 4;
     return merged;
   }
 
@@ -346,7 +381,7 @@
   function sectionLabel(section) {
     const map = {
       current:'現在地', mind:'心の声', insights:'気づき', reflections:'反省',
-      premises:'前提ノート', future:'未来設計', goals:'目標・目的', aiHistory:'AI履歴'
+      premises:'前提ノート', future:'未来設計', goals:'目標・目的', imports:'履歴インポート', aiHistory:'AI履歴'
     };
     return map[section] || section;
   }
@@ -363,9 +398,9 @@
     const title = record.title || record.before || record.mode || sectionLabel(section);
     const body = record.body || record.after || record.answer || record.question || '';
     const category = record.category || record.kind || record.mode || '';
-    const extra1 = record.concern || record.action || record.cause || record.reason || record.why || record.decision || '';
-    const extra2 = record.lesson || record.firstStep || record.deadline || record.question || '';
-    const extra3 = record.nextAction || record.priority || record.status || record.success || '';
+    const extra1 = record.concern || record.action || record.cause || record.reason || record.why || record.decision || record.period || '';
+    const extra2 = record.lesson || record.firstStep || record.deadline || record.question || record.linkUrl || '';
+    const extra3 = record.nextAction || record.priority || record.status || record.success || record.tags || '';
     return { title, body, category, extra1, extra2, extra3 };
   }
 
@@ -387,6 +422,10 @@
       extra3: normalized.extra3,
       createdAt: record.createdAt || '',
       updatedAt: record.updatedAt || '',
+      linkUrl: record.linkUrl || '',
+      imageUrl: record.imageUrl || '',
+      tags: record.tags || '',
+      hasImage: Boolean(record.imageData || record.imageUrl),
       raw: record
     };
   }
@@ -459,7 +498,13 @@
 
   function mountTabs() {
     const nav = document.getElementById('tabs');
-    nav.innerHTML = tabs.map(t => `<button class="tab-btn ${t.id === activeTab ? 'active' : ''} px-4 py-3.5 min-w-max transition-colors text-sm font-black flex items-center gap-2" data-tab="${t.id}"><span class="tab-icon"><i data-lucide="${t.icon}"></i></span>${t.label}</button>`).join('');
+    nav.innerHTML = tabs.map(t => {
+      const key = t.id === 'reflection' ? 'reflection' : t.id === 'premise' ? 'premise' : t.id;
+      const style = frameThemeStyle(key);
+      const active = t.id === activeTab;
+      const activeStyle = active ? `${style.card}${style.icon}border-bottom-color:${style.icon.match(/#[0-9a-fA-F]{6}/)?.[0] || '#1d4ed8'} !important;` : `background:rgba(255,255,255,.86);${style.icon}border-color:transparent;border-bottom-color:transparent;`;
+      return `<button class="tab-btn ${active ? 'active' : ''} px-4 py-3.5 min-w-max transition-colors text-sm font-black flex items-center gap-2 ${frameThemeClass(key)}" style="${activeStyle}" data-tab="${t.id}"><span class="tab-icon"><i data-lucide="${t.icon}"></i></span>${t.label}</button>`;
+    }).join('');
     nav.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
   }
 
@@ -469,6 +514,8 @@
       document.getElementById(`view-${t.id}`)?.classList.toggle('hidden', t.id !== id);
     });
     mountTabs();
+    if (id === 'import') renderImport();
+    if (id === 'map') renderMindMap();
     if (id === 'ai') renderAi();
     if (id === 'backup') renderBackup();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -491,18 +538,97 @@
     return `<div><label class="field-label">${label}</label><textarea class="textarea" name="${name}" placeholder="${escapeHtml(placeholder)}">${escapeHtml(value)}</textarea></div>`;
   }
 
+
+  function mediaFields(section) {
+    return `<div class="rounded-2xl bg-slate-50 border-2 border-slate-200 p-4 space-y-3">
+      <p class="text-sm font-black text-slate-700 flex items-center gap-2"><i data-lucide="paperclip" class="w-4 h-4"></i> 写真・URL添付</p>
+      ${inputHtml('参考URL', 'linkUrl', 'https://... 参考記事・商品ページ・旅館URLなど')}
+      ${inputHtml('写真URL', 'imageUrl', 'https://... 画像URLがある場合')}
+      <div><label class="field-label">写真ファイル（任意・ブラウザ内保存）</label><input class="input" type="file" name="imageFile" accept="image/*"><p class="text-[11px] font-bold text-slate-500 mt-1">写真ファイルは圧縮してブラウザ内に保存します。大量に入れる場合はJSONバックアップを推奨。</p></div>
+      ${inputHtml('タグ', 'tags', '例：旅,健康,安心,WEBRICH')}
+    </div>`;
+  }
+
+  function pickMedia(d = {}) {
+    return {
+      linkUrl: d.linkUrl || '',
+      imageUrl: d.imageUrl || '',
+      imageData: d.imageData || '',
+      imageName: d.imageName || '',
+      tags: d.tags || ''
+    };
+  }
+
+  function renderMedia(entry = {}) {
+    const img = entry.imageData || entry.imageUrl;
+    const link = entry.linkUrl;
+    const tags = String(entry.tags || '').split(',').map(x => x.trim()).filter(Boolean);
+    if (!img && !link && !tags.length) return '';
+    return `<div class="entry-media">
+      ${img ? `<a href="${escapeHtml(entry.imageUrl || entry.imageData)}" target="_blank" rel="noopener"><img src="${escapeHtml(img)}" alt="添付画像"></a>` : '<div></div>'}
+      <div class="space-y-2">
+        ${link ? `<a class="media-link" href="${escapeHtml(link)}" target="_blank" rel="noopener"><i data-lucide="external-link" class="w-4 h-4"></i>${escapeHtml(shorten(link, 80))}</a>` : ''}
+        ${tags.length ? `<div class="flex flex-wrap gap-2">${tags.map(t => `<span class="badge">#${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  async function prepareMedia(form, d) {
+    const file = form.querySelector('input[type="file"][name="imageFile"]')?.files?.[0];
+    if (!file) return { linkUrl: d.linkUrl || '', imageUrl: d.imageUrl || '', tags: d.tags || '' };
+    try {
+      const imageData = await compressImageFile(file, 900, .72);
+      return { linkUrl: d.linkUrl || '', imageUrl: d.imageUrl || '', tags: d.tags || '', imageData, imageName: file.name };
+    } catch (err) {
+      console.error(err);
+      showToast('写真の読み込みに失敗しました。URL添付で保存してください。', 'error');
+      return { linkUrl: d.linkUrl || '', imageUrl: d.imageUrl || '', tags: d.tags || '' };
+    }
+  }
+
+  function compressImageFile(file, max = 900, quality = .72) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > height && width > max) { height = Math.round(height * max / width); width = max; }
+          else if (height > max) { width = Math.round(width * max / height); height = max; }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function submitBtn(text = '保存する', icon = 'save', extra = '') {
     return `<button class="btn-primary btn-blue w-full ${extra}" type="submit"><i data-lucide="${icon}" class="w-5 h-5"></i>${text}</button>`;
   }
 
   function formData(form) {
-    return Object.fromEntries(new FormData(form).entries());
+    const out = {};
+    new FormData(form).forEach((v, k) => { if (!(v instanceof File)) out[k] = v; });
+    return out;
   }
 
   function bindForm(id, handler) {
     const form = document.getElementById(id);
     if (!form) return;
-    form.addEventListener('submit', (e) => { e.preventDefault(); handler(e.currentTarget, formData(e.currentTarget)); });
+    if (form.dataset.bound === 'true') return;
+    form.dataset.bound = 'true';
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const d = formData(e.currentTarget);
+      Object.assign(d, await prepareMedia(e.currentTarget, d));
+      await handler(e.currentTarget, d);
+    });
   }
 
   function entryActions(section, id) {
@@ -515,7 +641,7 @@
     if (entry.priority) parts.push(`<span class="badge">優先度: ${escapeHtml(entry.priority)}</span>`);
     if (entry.status) parts.push(`<span class="badge">${escapeHtml(entry.status)}</span>`);
     parts.push(`<span class="badge">${fmt(entry.createdAt)}</span>`);
-    return `<div class="flex flex-wrap gap-2 mt-3">${parts.join('')}</div>`;
+    return `${renderMedia(entry)}<div class="flex flex-wrap gap-2 mt-3">${parts.join('')}</div>`;
   }
 
   function emptyList(message) {
@@ -530,7 +656,8 @@
       reflections: state.reflections.length,
       premises: state.premises.length,
       future: state.future.length,
-      goals: state.goals.length
+      goals: state.goals.length,
+      imports: state.imports.length
     };
     const recent = getAllEntries().slice(0, 5);
     const topGoals = state.goals.slice(0, 3);
@@ -557,6 +684,8 @@
             ${statCard('前提', counts.premises, 'scale', 'premise')}
             ${statCard('未来', counts.future, 'mountain-snow', 'future')}
             ${statCard('目標', counts.goals, 'target', 'goals')}
+            ${statCard('履歴', counts.imports, 'file-input', 'import')}
+            ${statCard('マップ', getAllEntries().length + state.aiHistory.length, 'git-branch', 'map')}
             ${statCard('AI履歴', state.aiHistory.length, 'bot', 'ai')}
           </div>
           <div class="panel">
@@ -597,6 +726,7 @@
       ${inputHtml('タイトル', 'title', '例：今の体調、今の仕事状況、今月のお金の状態')}
       ${textareaHtml('今ある事・事実', 'body', '感情ではなく、なるべく事実として書き出します。')}
       ${textareaHtml('気になる点', 'concern', '不安・違和感・注意点があれば書きます。')}
+      ${mediaFields('current')}
       ${submitBtn('現在地を保存', 'map-pin')}`;
 
     document.getElementById('mindForm').innerHTML = `
@@ -604,6 +734,7 @@
       ${inputHtml('一言タイトル', 'title', '例：今日は焦りが強い / 少し安心した')}
       ${textareaHtml('今考えていること・思っていること', 'body', 'まとまっていなくてOKです。頭の中をそのまま書きます。')}
       ${inputHtml('感情の強さ 1〜10', 'intensity', '例：7', '', 'number')}
+      ${mediaFields('mind')}
       ${submitBtn('心の声を保存', 'heart')}`;
 
     document.getElementById('insightForm').innerHTML = `
@@ -611,6 +742,7 @@
       ${inputHtml('気づきタイトル', 'title', '例：自分は不安な時ほど急いでしまう')}
       ${textareaHtml('気づいたこと', 'body', '今日の学び、パターン、違和感、改善のヒントなど。')}
       ${textareaHtml('活かし方', 'action', 'この気づきをどう使うか。')}
+      ${mediaFields('insights')}
       ${submitBtn('気づきを保存', 'lightbulb')}`;
 
     document.getElementById('reflectionForm').innerHTML = `
@@ -620,6 +752,7 @@
       ${textareaHtml('原因・背景', 'cause', 'なぜそうなったか。体調、前提、焦り、環境など。')}
       ${textareaHtml('学び', 'lesson', 'ここから何を学ぶか。')}
       ${textareaHtml('次に変える行動', 'nextAction', '次はどうするか。小さく具体的に。')}
+      ${mediaFields('reflections')}
       ${submitBtn('反省を保存', 'rotate-ccw', 'btn-amber')}`;
 
     document.getElementById('premiseForm').innerHTML = `
@@ -628,6 +761,7 @@
       ${textareaHtml('今の前提', 'before', '例：お金を使うのは悪い / 今日は悪寒がないからコンビニに寄らないでおこう')}
       ${textareaHtml('置き換えたい前提・別の見方', 'after', '例：まだ数百円あるから、好きなコーヒーで安心を買ってもいい')}
       ${textareaHtml('この前提で選ぶ行動', 'decision', '例：今日は無理せず帰る / 体調が良ければ小さなご褒美を許す')}
+      ${mediaFields('premises')}
       ${submitBtn('前提を保存', 'scale')}`;
 
     document.getElementById('futureForm').innerHTML = `
@@ -638,6 +772,7 @@
       ${textareaHtml('最初の一歩', 'firstStep', '今週できる小さな一歩。')}
       <div><label class="field-label">優先度</label>${selectHtml('priority', ['高', '中', '低'])}</div>
       <div><label class="field-label">状態</label>${selectHtml('status', ['未着手', '準備中', '進行中', '達成', '保留'])}</div>
+      ${mediaFields('future')}
       ${submitBtn('未来を保存', 'mountain-snow')}`;
 
     document.getElementById('goalForm').innerHTML = `
@@ -648,6 +783,7 @@
       ${inputHtml('期限・目安', 'deadline', '例：2027年12月 / 1年以内')}
       ${textareaHtml('達成の基準', 'success', '何ができたら達成とするか。')}
       <div><label class="field-label">優先度</label>${selectHtml('priority', ['高', '中', '低'])}</div>
+      ${mediaFields('goals')}
       ${submitBtn('目標を保存', 'target')}`;
   }
 
@@ -722,7 +858,7 @@
   function editEntry(section, id) {
     const item = state[section].find(x => x.id === id);
     if (!item) return;
-    const labelMap = { current:'現在地', mind:'心の声', insights:'気づき', reflections:'反省', premises:'前提', future:'未来', goals:'目標' };
+    const labelMap = { current:'現在地', mind:'心の声', insights:'気づき', reflections:'反省', premises:'前提', future:'未来', goals:'目標', imports:'履歴' };
     const text = prompt(`${labelMap[section]}の本文を編集します。必要な部分だけ修正してください。`, item.body || item.before || item.title || '');
     if (text === null) return;
     if (updateState(s => {
@@ -747,39 +883,186 @@
   function bindForms() {
     bindForm('currentForm', (form, d) => {
       if (!d.title && !d.body) return showToast('タイトルか本文を入力してください', 'warn');
-      const entry = { id:uid(), category:d.category, title:d.title || '現在地', body:d.body || '', concern:d.concern || '', createdAt:nowIso(), updatedAt:nowIso() };
+      const entry = { id:uid(), category:d.category, title:d.title || '現在地', body:d.body || '', concern:d.concern || '', ...pickMedia(d), createdAt:nowIso(), updatedAt:nowIso() };
       saveEntry('current', entry, form);
     });
     bindForm('mindForm', (form, d) => {
       if (!d.title && !d.body) return showToast('タイトルか本文を入力してください', 'warn');
-      const entry = { id:uid(), category:d.category, title:d.title || '心の声', body:d.body || '', intensity:d.intensity || '', createdAt:nowIso(), updatedAt:nowIso() };
+      const entry = { id:uid(), category:d.category, title:d.title || '心の声', body:d.body || '', intensity:d.intensity || '', ...pickMedia(d), createdAt:nowIso(), updatedAt:nowIso() };
       saveEntry('mind', entry, form);
     });
     bindForm('insightForm', (form, d) => {
       if (!d.title && !d.body) return showToast('気づきを入力してください', 'warn');
-      const entry = { id:uid(), category:d.category, title:d.title || '気づき', body:d.body || '', action:d.action || '', createdAt:nowIso(), updatedAt:nowIso() };
+      const entry = { id:uid(), category:d.category, title:d.title || '気づき', body:d.body || '', action:d.action || '', ...pickMedia(d), createdAt:nowIso(), updatedAt:nowIso() };
       saveEntry('insights', entry, form);
     });
     bindForm('reflectionForm', (form, d) => {
       if (!d.title && !d.body) return showToast('反省内容を入力してください', 'warn');
-      const entry = { id:uid(), category:d.category, title:d.title || '反省', body:d.body || '', cause:d.cause || '', lesson:d.lesson || '', nextAction:d.nextAction || '', createdAt:nowIso(), updatedAt:nowIso() };
+      const entry = { id:uid(), category:d.category, title:d.title || '反省', body:d.body || '', cause:d.cause || '', lesson:d.lesson || '', nextAction:d.nextAction || '', ...pickMedia(d), createdAt:nowIso(), updatedAt:nowIso() };
       saveEntry('reflections', entry, form);
     });
     bindForm('premiseForm', (form, d) => {
       if (!d.before && !d.after) return showToast('前提を入力してください', 'warn');
-      const entry = { id:uid(), kind:d.kind, category:d.category, before:d.before || '', after:d.after || '', decision:d.decision || '', createdAt:nowIso(), updatedAt:nowIso() };
+      const entry = { id:uid(), kind:d.kind, category:d.category, before:d.before || '', after:d.after || '', decision:d.decision || '', ...pickMedia(d), createdAt:nowIso(), updatedAt:nowIso() };
       saveEntry('premises', entry, form);
     });
     bindForm('futureForm', (form, d) => {
       if (!d.title && !d.body) return showToast('未来像を入力してください', 'warn');
-      const entry = { id:uid(), category:d.category, title:d.title || '未来', body:d.body || '', reason:d.reason || '', firstStep:d.firstStep || '', priority:d.priority || '中', status:d.status || '未着手', createdAt:nowIso(), updatedAt:nowIso() };
+      const entry = { id:uid(), category:d.category, title:d.title || '未来', body:d.body || '', reason:d.reason || '', firstStep:d.firstStep || '', priority:d.priority || '中', status:d.status || '未着手', ...pickMedia(d), createdAt:nowIso(), updatedAt:nowIso() };
       saveEntry('future', entry, form);
     });
     bindForm('goalForm', (form, d) => {
       if (!d.title && !d.body) return showToast('目標を入力してください', 'warn');
-      const entry = { id:uid(), category:d.category, title:d.title || '目標', body:d.body || '', why:d.why || '', deadline:d.deadline || '', success:d.success || '', priority:d.priority || '中', createdAt:nowIso(), updatedAt:nowIso() };
+      const entry = { id:uid(), category:d.category, title:d.title || '目標', body:d.body || '', why:d.why || '', deadline:d.deadline || '', success:d.success || '', priority:d.priority || '中', ...pickMedia(d), createdAt:nowIso(), updatedAt:nowIso() };
       saveEntry('goals', entry, form);
     });
+  }
+
+
+  function renderImport() {
+    const tendencies = analyzeTendencies();
+    document.getElementById('view-import').innerHTML = `
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-4 space-y-6">
+          <div class="panel border-teal-600">
+            <h2 class="panel-title text-teal-800"><i data-lucide="file-input"></i> 自分の履歴をインポート</h2>
+            <p class="text-sm font-bold text-slate-600 mt-2 mb-4">過去の経歴、実績、病歴、会話ログ、メモ、物語作成用の人生履歴を貼り付けます。AIコーチが傾向分析に使います。</p>
+            <form id="importForm" class="space-y-4">
+              <div><label class="field-label">履歴カテゴリ</label>${selectHtml('category', catalogs.history)}</div>
+              ${inputHtml('タイトル', 'title', '例：これまでの人生履歴 / 仕事の実績 / 健康履歴')}
+              ${inputHtml('時期・期間', 'period', '例：幼少期〜現在 / 2020〜2026')}
+              ${textareaHtml('インポートする履歴・メモ', 'body', 'ここに自分の履歴、過去メモ、年表、会話ログ、実績を書き込む、または下のファイルから読み込みます。')}
+              <div><label class="field-label">テキスト/Markdown/CSVファイルを読み込み</label><input id="historyTextFile" class="input" type="file" accept=".txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json"><p class="text-[11px] font-bold text-slate-500 mt-1">読み込むと本文欄に入ります。保存ボタンで確定します。</p></div>
+              ${mediaFields('imports')}
+              ${submitBtn('履歴を保存してAI分析に使う', 'file-input')}
+            </form>
+          </div>
+          <div class="panel border-purple-600">
+            <h2 class="panel-title text-purple-800"><i data-lucide="activity"></i> 簡易傾向分析</h2>
+            <div class="space-y-3 mt-4">
+              ${tendencyBox('よく出る領域', tendencies.topCategories.join(' / ') || 'まだ分析データ不足')}
+              ${tendencyBox('感情・前提の傾向', tendencies.emotionHint)}
+              ${tendencyBox('未来志向の傾向', tendencies.futureHint)}
+              ${tendencyBox('AIに見せる材料', `履歴 ${state.imports.length}件 / 全記録 ${getAllEntries().length}件`)}
+            </div>
+            <button class="btn-primary btn-blue w-full mt-4" onclick="LifeCompass.switchTab('ai')"><i data-lucide="sparkles" class="w-5 h-5"></i> AIで深く分析する</button>
+          </div>
+        </div>
+        <div class="lg:col-span-8">
+          <div class="panel">
+            <div class="panel-head"><h2 class="panel-title"><i data-lucide="archive"></i> インポート済み履歴</h2><span class="count-pill">${state.imports.length}件</span></div>
+            <div class="list-grid">${state.imports.length ? state.imports.map(e => `<article class="entry-card"><div class="flex justify-between gap-3"><div><span class="badge">${escapeHtml(e.category)}</span><h3 class="text-lg font-black mt-2">${escapeHtml(e.title)}</h3><p class="text-sm font-bold text-slate-600 mt-1">${escapeHtml(e.period || '')}</p><p class="mt-3 text-sm font-bold text-slate-700 whitespace-pre-wrap leading-relaxed">${escapeHtml(shorten(e.body, 700))}</p>${cardMeta(e)}</div>${entryActions('imports', e.id)}</div></article>`).join('') : emptyList('履歴インポートはまだありません。過去の経歴や実績を貼り付けると、AIの分析が一段深くなります。')}</div>
+          </div>
+        </div>
+      </div>`;
+    const fileInput = document.getElementById('historyTextFile');
+    fileInput.onchange = readHistoryTextFile;
+    bindForm('importForm', (form, d) => {
+      if (!d.title && !d.body) return showToast('履歴のタイトルか本文を入力してください', 'warn');
+      const entry = { id:uid(), category:d.category, title:d.title || 'インポート履歴', period:d.period || '', body:d.body || '', ...pickMedia(d), createdAt:nowIso(), updatedAt:nowIso() };
+      saveEntry('imports', entry, form);
+      setTimeout(renderImport, 80);
+    });
+    bindActionButtons();
+    refreshIcons();
+  }
+
+  function readHistoryTextFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const area = document.querySelector('#importForm textarea[name="body"]');
+      if (area) area.value = String(reader.result || '');
+      showToast('ファイル内容を本文に読み込みました。保存ボタンで確定してください。', 'success');
+    };
+    reader.readAsText(file);
+  }
+
+  function tendencyBox(title, body) {
+    return `<div class="rounded-2xl bg-slate-50 border-2 border-slate-200 p-4"><p class="text-xs font-black text-slate-500">${escapeHtml(title)}</p><p class="font-black text-slate-900 mt-1 whitespace-pre-wrap">${escapeHtml(body || '未分析')}</p></div>`;
+  }
+
+  function analyzeTendencies() {
+    const entries = getAllEntries();
+    const categoryCounts = {};
+    entries.forEach(e => { const k = e.category || e.kind || e.sectionLabel; categoryCounts[k] = (categoryCounts[k] || 0) + 1; });
+    const topCategories = Object.entries(categoryCounts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([k,v]) => `${k}(${v})`);
+    const text = entries.map(e => `${e.title || ''} ${e.body || ''} ${e.before || ''} ${e.after || ''}`).join(' ');
+    const emotionHint = (text.match(/不安|心配|焦り|迷い|怖/g) || []).length > (text.match(/安心|嬉しい|感謝|できる|大丈夫/g) || []).length
+      ? '不安・迷いの言葉がやや多めです。前提ノートで「別の見方」に置き換えるとAIコーチングが効きます。'
+      : '安心・前向きな言葉も見えています。力になる前提として保存すると判断の土台になります。';
+    const futureHint = state.future.length || state.goals.length
+      ? '未来・目標の記録があります。次は「最初の一歩」と「期限」を増やすと行動に変わります。'
+      : '未来・目標がまだ少なめです。行きたい場所、欲しい安心、健康、お金から1つ書くのがおすすめです。';
+    return { topCategories, emotionHint, futureHint };
+  }
+
+  function renderMindMap() {
+    const mode = document.getElementById('mindMapMode')?.value || 'all';
+    const data = buildMindMapData(mode);
+    document.getElementById('view-map').innerHTML = `
+      <div class="space-y-6">
+        <div class="panel border-purple-700">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div><h2 class="panel-title text-purple-800"><i data-lucide="git-branch"></i> 人生マインドマップ</h2><p class="text-sm font-bold text-slate-600 mt-2">保存データ・AI分析・インポート履歴を、文章だけでなく視覚的に眺めます。</p></div>
+            <div class="flex flex-wrap gap-2"><select id="mindMapMode" class="select w-auto"><option value="all" ${mode==='all'?'selected':''}>自分全体</option><option value="future" ${mode==='future'?'selected':''}>未来設計</option><option value="premise" ${mode==='premise'?'selected':''}>前提の整理</option><option value="history" ${mode==='history'?'selected':''}>履歴傾向</option><option value="ai" ${mode==='ai'?'selected':''}>AI分析</option></select><button id="refreshMapBtn" class="btn-soft"><i data-lucide="refresh-cw" class="w-4 h-4"></i>更新</button></div>
+          </div>
+        </div>
+        <div class="mindmap-wrap" id="mindMapCanvas">
+          <svg class="mindmap-svg" viewBox="0 0 1000 700" preserveAspectRatio="none">${data.lines.join('')}</svg>
+          ${data.nodes.join('')}
+        </div>
+        <div class="panel"><h2 class="panel-title"><i data-lucide="list-tree"></i> マップの読み方</h2><p class="text-sm font-bold text-slate-700 mt-3 leading-relaxed">中心が「自分」。周辺が現在地・心・気づき・反省・前提・未来・目標・履歴・AI履歴です。数が多い枝ほど、今の人生で意識を使っている領域です。AI分析後はAI履歴もマップに反映されます。</p></div>
+      </div>`;
+    document.getElementById('mindMapMode').onchange = renderMindMap;
+    document.getElementById('refreshMapBtn').onclick = renderMindMap;
+    refreshIcons();
+  }
+
+  function buildMindMapData(mode) {
+    const allGroups = [
+      ['current','現在地','map-pin',state.current], ['mind','心の声','heart',state.mind], ['insights','気づき','lightbulb',state.insights],
+      ['reflection','反省', 'rotate-ccw', state.reflections], ['premise','前提','scale',state.premises], ['future','未来','mountain-snow',state.future],
+      ['goals','目標','target',state.goals], ['imports','履歴','file-input',state.imports], ['ai','AI履歴','bot',state.aiHistory]
+    ];
+    let groups = allGroups;
+    if (mode === 'future') groups = allGroups.filter(g => ['future','goals','premise','insights'].includes(g[0]));
+    if (mode === 'premise') groups = allGroups.filter(g => ['premise','mind','reflection','insights'].includes(g[0]));
+    if (mode === 'history') groups = allGroups.filter(g => ['imports','current','future','goals','insights'].includes(g[0]));
+    if (mode === 'ai') groups = allGroups.filter(g => ['ai','premise','goals','future','imports'].includes(g[0]));
+    const cx = 50, cy = 50;
+    const nodes = [`<div class="mind-node center" style="left:${cx}%;top:${cy}%;"><div class="text-lg">自分</div><div class="text-xs mt-1 opacity-90">Life Compass</div><span class="node-count">${getAllEntries().length}</span></div>`];
+    const lines = [];
+    const radius = mode === 'all' ? 36 : 32;
+    groups.forEach((g, i) => {
+      const angle = (-90 + i * 360 / groups.length) * Math.PI / 180;
+      const x = cx + radius * Math.cos(angle);
+      const y = cy + radius * Math.sin(angle);
+      const style = frameThemeStyle(g[0]);
+      lines.push(`<line x1="${cx*10}" y1="${cy*7}" x2="${x*10}" y2="${y*7}" stroke="${extractColor(style.icon)}" stroke-width="3" opacity=".35"/>`);
+      nodes.push(`<button onclick="LifeCompass.switchTab('${tabIdFromGroup(g[0])}')" class="mind-node ${frameThemeClass(g[0])}" style="left:${x}%;top:${y}%;${style.card}"><i data-lucide="${g[2]}" style="${style.icon}" class="w-7 h-7 mx-auto mb-1"></i><div>${g[1]}</div><span class="node-count">${g[3].length}</span></button>`);
+      g[3].slice(0,2).forEach((e, j) => {
+        const childAngle = angle + (j === 0 ? -.28 : .28);
+        const cx2 = x + 16 * Math.cos(childAngle);
+        const cy2 = y + 16 * Math.sin(childAngle);
+        lines.push(`<line x1="${x*10}" y1="${y*7}" x2="${cx2*10}" y2="${cy2*7}" stroke="${extractColor(style.icon)}" stroke-width="2" opacity=".25"/>`);
+        nodes.push(`<div class="mind-node child" style="left:${Math.max(8, Math.min(92, cx2))}%;top:${Math.max(8, Math.min(92, cy2))}%;${style.card}">${escapeHtml(shorten(e.title || e.before || e.mode || e.category || '記録', 34))}</div>`);
+      });
+    });
+    return { nodes, lines };
+  }
+
+  function extractColor(styleText) {
+    return String(styleText).match(/#[0-9a-fA-F]{6}/)?.[0] || '#2563eb';
+  }
+
+  function tabIdFromGroup(group) {
+    if (group === 'reflection') return 'reflection';
+    if (group === 'premise') return 'premise';
+    if (group === 'imports') return 'import';
+    if (group === 'ai') return 'ai';
+    return group;
   }
 
   function renderAi() {
@@ -802,6 +1085,8 @@
                 <option value="反省から改善">反省から改善</option>
                 <option value="目標とのズレ">目標とのズレ確認</option>
                 <option value="ビジネス現実チェック">ビジネス現実チェック</option>
+                <option value="履歴から傾向分析">履歴から傾向分析</option>
+                <option value="マインドマップ用整理">マインドマップ用整理</option>
               </select></div>
               <div><label class="field-label">追加で相談したいこと</label><textarea id="coachQuestion" class="textarea" placeholder="例：今日なにを優先すべき？ この前提は変えた方がいい？"></textarea></div>
               <button id="runAiBtn" class="btn-primary btn-blue w-full"><i data-lucide="bot" class="w-5 h-5"></i> AIに総合判断してもらう</button>
@@ -811,7 +1096,7 @@
           <div class="panel">
             <h2 class="panel-title"><i data-lucide="list-checks"></i> AIが見るデータ</h2>
             <div class="mt-4 grid grid-cols-2 gap-2 text-sm font-black text-slate-700">
-              ${miniCount('現在地', state.current.length)}${miniCount('心の声', state.mind.length)}${miniCount('気づき', state.insights.length)}${miniCount('反省', state.reflections.length)}${miniCount('前提', state.premises.length)}${miniCount('未来', state.future.length)}${miniCount('目標', state.goals.length)}${miniCount('AI履歴', state.aiHistory.length)}
+              ${miniCount('現在地', state.current.length)}${miniCount('心の声', state.mind.length)}${miniCount('気づき', state.insights.length)}${miniCount('反省', state.reflections.length)}${miniCount('前提', state.premises.length)}${miniCount('未来', state.future.length)}${miniCount('目標', state.goals.length)}${miniCount('履歴', state.imports.length)}${miniCount('AI履歴', state.aiHistory.length)}
             </div>
           </div>
         </div>
@@ -847,14 +1132,14 @@
   function miniCount(label, count) {
     const theme = frameThemeClassByLabel(label);
     const style = frameThemeStyle(label);
-    const iconMap = { '現在地':'map-pin', '心の声':'heart', '気づき':'lightbulb', '反省':'rotate-ccw', '前提':'scale', '未来':'mountain-snow', '目標':'target', 'AI履歴':'bot' };
+    const iconMap = { '現在地':'map-pin', '心の声':'heart', '気づき':'lightbulb', '反省':'rotate-ccw', '前提':'scale', '未来':'mountain-snow', '目標':'target', '履歴':'file-input', 'AI履歴':'bot' };
     const icon = iconMap[label] || 'circle';
     return `<div class="mini-count-card ${theme}" style="${style.card}"><span class="inline-flex items-center gap-2"><span class="mini-icon frame-icon" style="${style.iconBox}${style.icon}"><i data-lucide="${icon}"></i></span><span style="${style.icon}">${label}</span></span><span class="text-lg font-black">${count}</span></div>`;
   }
 
   function buildPrompt(mode, question) {
     const bundle = buildDataBundle();
-    return `あなたは、ユーザーの人生全体を現実的かつ前向きに支援するAI人生コーチです。甘い励ましだけでなく、事実・前提・目標・体調・お金・感情を総合して、具体的な行動まで落とし込んでください。医療・法律・投資の断定は避け、必要なら専門家確認を促してください。
+    return `あなたは、ユーザーの人生全体を現実的かつ前向きに支援するAI人生コーチです。甘い励ましだけでなく、事実・前提・目標・体調・お金・感情・インポートされた人生履歴を総合して、本人の傾向、繰り返しパターン、強み、注意点、具体的な行動まで落とし込んでください。医療・法律・投資の断定は避け、必要なら専門家確認を促してください。
 
 【今回の診断モード】${mode}
 【追加相談】${question || '特になし'}
@@ -870,7 +1155,9 @@ ${bundle}
 5. 未来目標に近づくための優先順位
 6. 今日やる小さな一手 3つ
 7. やらない方がいいこと
-8. 最後に短いコーチングメッセージ
+8. 履歴から見える本人の傾向
+9. マインドマップ化すると中心に置くべきテーマ
+10. 最後に短いコーチングメッセージ
 
 口調は日本語。具体的に。厳しさと温かさのバランスを取ってください。`;
   }
@@ -960,6 +1247,8 @@ ${bundle}
     const recentMind = state.mind.slice(0, 3);
     const recentRef = state.reflections.slice(0, 3);
     const recentInsight = state.insights.slice(0, 3);
+    const recentImports = state.imports.slice(0, 3);
+    const tendencies = analyzeTendencies();
 
     return `【APIなし簡易コーチング】
 
@@ -981,12 +1270,20 @@ ${helpful.length ? helpful.slice(0,3).map(p => `・${p.after || p.before}`).join
 6. 反省から見える改善点
 ${recentRef.length ? recentRef.map(r => `・${r.title}：次は「${r.nextAction || '次の行動を具体化'}」`).join('\n') : '・反省ノートがまだありません。失敗ではなく、次の作戦として1つ残しましょう。'}
 
-7. 今日の小さな一手
+7. インポート履歴から見える材料
+${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.body, 90)}`).join('\n') : '・履歴インポートはまだありません。これまでの人生履歴・仕事実績・健康履歴を入れると、傾向分析が深くなります。'}
+
+8. 今の傾向
+・よく出る領域：${tendencies.topCategories.join(' / ') || 'データ不足'}
+・${tendencies.emotionHint}
+・${tendencies.futureHint}
+
+9. 今日の小さな一手
 ・現在地を1つ追加する
 ・前提ノートに「今の自分を縛っている考え」を1つ書く
 ・未来設計に「欲しい安心」を1つ書く
 
-8. コーチングメッセージ
+10. コーチングメッセージ
 大きく変える必要はありません。今日は「見える化」を1つ増やせば十分です。人生は一発逆転より、前提の微修正で方向が変わります。数百円のコーヒーも、浪費ではなく“安心を買う投資”になる日があります。`;
   }
 
@@ -1063,7 +1360,7 @@ ${recentRef.length ? recentRef.map(r => `・${r.title}：次は「${r.nextAction
 
   function getAllEntries() {
     const map = [
-      ['current','現在地'], ['mind','心の声'], ['insights','気づき'], ['reflections','反省'], ['premises','前提'], ['future','未来'], ['goals','目標']
+      ['current','現在地'], ['mind','心の声'], ['insights','気づき'], ['reflections','反省'], ['premises','前提'], ['future','未来'], ['goals','目標'], ['imports','履歴']
     ];
     return map.flatMap(([key, label]) => state[key].map(x => ({ ...x, section:key, sectionLabel:label }))).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
@@ -1143,7 +1440,10 @@ ${recentRef.length ? recentRef.map(r => `・${r.title}：次は「${r.nextAction
     mountTabs();
     renderHome();
     renderForms();
+    bindForms();
     renderLists();
+    if (activeTab === 'import') renderImport();
+    if (activeTab === 'map') renderMindMap();
     if (activeTab === 'ai') renderAi();
     if (activeTab === 'backup') renderBackup();
     refreshIcons();
@@ -1155,7 +1455,7 @@ ${recentRef.length ? recentRef.map(r => `・${r.title}：次は「${r.nextAction
     document.getElementById('quickSaveBtn').onclick = () => showToast(`最終保存：${new Date(state.updatedAt).toLocaleString('ja-JP')} / GAS：${isGasSyncEnabled() ? 'ON' : 'OFF'}`, 'success');
   }
 
-  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, state: () => state };
+  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, renderMindMap, state: () => state };
 
   document.addEventListener('DOMContentLoaded', () => {
     injectEnhancedUiStyles();
