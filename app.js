@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'ultimate-history-map-v4-20260726';
+  const LIFE_COMPASS_UI_VERSION = 'notebooklm-v4_2-20260726';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -24,10 +24,26 @@
     createdAt: nowIso(),
     profile: {
       name: '',
+      age: '',
+      familyStructure: '',
+      medicalHistory: '',
+      likedThings: '',
+      strongThings: '',
+      workHistory: '',
+      traumaHistory: '',
+      values: '',
+      personalityTraits: '',
+      lifeTimeline: '',
+      currentConstraints: '',
+      supportNeeded: '',
+      memo: '',
       coachingTone: '現実的で前向き。甘やかしすぎず、具体的な次の一手を出す。',
       aiProvider: 'gemini',
       gasUrl: '',
-      gasSyncEnabled: true
+      gasSyncEnabled: true,
+      notebookDocUrl: '',
+      notebookDocUpdatedAt: '',
+      profileUpdatedAt: ''
     },
     current: [],
     mind: [],
@@ -45,6 +61,7 @@
 
   const tabs = [
     { id:'home', label:'ホーム', icon:'home' },
+    { id:'profile', label:'プロフィール', icon:'user-round-cog' },
     { id:'current', label:'現在地', icon:'map-pin' },
     { id:'mind', label:'心の声', icon:'heart' },
     { id:'insights', label:'気づき', icon:'lightbulb' },
@@ -72,6 +89,7 @@
 
   // --- UIテーマ：各フレームの薄色背景・大きめアイコン・スマホ最適化 ---
   const frameThemes = {
+    profile: { className: 'frame-theme-profile', label: 'プロフィール' },
     current: { className: 'frame-theme-current', label: '現在地' },
     mind: { className: 'frame-theme-mind', label: '心の声' },
     insights: { className: 'frame-theme-insights', label: '気づき' },
@@ -99,6 +117,7 @@
   function frameThemeStyle(keyOrLabel) {
     const key = String(keyOrLabel || '');
     const map = {
+      profile: { bg: '#eef6ff', bg2: '#dbeafe', border: '#7dd3fc', icon: '#0369a1' },
       current: { bg: '#eef6ff', bg2: '#dbeafe', border: '#93c5fd', icon: '#1d4ed8' },
       mind: { bg: '#fff1f5', bg2: '#ffe4e6', border: '#f9a8d4', icon: '#db2777' },
       insights: { bg: '#fffbeb', bg2: '#fef3c7', border: '#fcd34d', icon: '#ca8a04' },
@@ -119,7 +138,8 @@
     };
     let s = map[key];
     if (!s) {
-      if (key.includes('現在地')) s = map.current;
+      if (key.includes('プロフィール')) s = map.profile;
+      else if (key.includes('現在地')) s = map.current;
       else if (key.includes('心')) s = map.mind;
       else if (key.includes('気づき')) s = map.insights;
       else if (key.includes('反省')) s = map.reflection;
@@ -140,6 +160,7 @@
 
   function frameThemeClassByLabel(label = '') {
     const text = String(label);
+    if (text.includes('プロフィール')) return frameThemeClass('profile');
     if (text.includes('現在地')) return frameThemeClass('current');
     if (text.includes('心')) return frameThemeClass('mind');
     if (text.includes('気づき')) return frameThemeClass('insights');
@@ -172,6 +193,7 @@
         transform: translateY(-2px);
         box-shadow: 0 12px 28px rgba(15, 23, 42, .11);
       }
+      .frame-theme-profile { background: linear-gradient(135deg, #eef6ff 0%, #e0f2fe 100%); border-color: #7dd3fc; }
       .frame-theme-current { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #93c5fd; }
       .frame-theme-mind { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-color: #fda4af; }
       .frame-theme-insights { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-color: #fcd34d; }
@@ -186,6 +208,7 @@
       .frame-theme-default { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-color: #cbd5e1; }
 
       /* 強制適用版：GitHub/Tailwind/既存CSSの影響を受けても色が出るようにする */
+      .dashboard-card.frame-theme-profile, .home-info-card.frame-theme-profile, .mini-count-card.frame-theme-profile { background: linear-gradient(135deg, #eef6ff 0%, #e0f2fe 100%) !important; border-color: #7dd3fc !important; }
       .dashboard-card.frame-theme-current, .home-info-card.frame-theme-current, .mini-count-card.frame-theme-current { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important; border-color: #93c5fd !important; }
       .dashboard-card.frame-theme-mind, .home-info-card.frame-theme-mind, .mini-count-card.frame-theme-mind { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%) !important; border-color: #fda4af !important; }
       .dashboard-card.frame-theme-insights, .home-info-card.frame-theme-insights, .mini-count-card.frame-theme-insights { background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important; border-color: #fcd34d !important; }
@@ -217,6 +240,7 @@
       .frame-icon svg { width: 31px; height: 31px; stroke-width: 2.45; }
       .frame-title { font-size: .98rem; line-height: 1.35; font-weight: 900; color: #1e293b; }
       .frame-count { font-size: 2.85rem; line-height: .95; font-weight: 950; letter-spacing: -.04em; color: #020617; }
+      .frame-theme-profile .frame-icon, .frame-theme-profile .frame-title { color: #0369a1; }
       .frame-theme-current .frame-icon, .frame-theme-current .frame-title { color: #1d4ed8; }
       .frame-theme-mind .frame-icon, .frame-theme-mind .frame-title { color: #be123c; }
       .frame-theme-insights .frame-icon, .frame-theme-insights .frame-title { color: #a16207; }
@@ -317,7 +341,7 @@
     ['current','mind','insights','reflections','premises','future','goals','imports','aiHistory'].forEach(k => {
       merged[k] = Array.isArray(data[k]) ? data[k] : [];
     });
-    merged.version = 4;
+    merged.version = 4.1;
     return merged;
   }
 
@@ -380,7 +404,7 @@
 
   function sectionLabel(section) {
     const map = {
-      current:'現在地', mind:'心の声', insights:'気づき', reflections:'反省',
+      profile:'プロフィール', current:'現在地', mind:'心の声', insights:'気づき', reflections:'反省',
       premises:'前提ノート', future:'未来設計', goals:'目標・目的', imports:'履歴インポート', aiHistory:'AI履歴'
     };
     return map[section] || section;
@@ -395,6 +419,16 @@
   }
 
   function normalizeForSheet(section, record = {}) {
+    if (section === 'profile') {
+      return {
+        title: 'プロフィール',
+        body: profileSummary(record),
+        category: 'basicProfile',
+        extra1: `age:${record.age || ''} / family:${record.familyStructure || ''}`,
+        extra2: `medical:${shorten(record.medicalHistory || '', 180)}`,
+        extra3: `trauma:${shorten(record.traumaHistory || '', 180)}`
+      };
+    }
     const title = record.title || record.before || record.mode || sectionLabel(section);
     const body = record.body || record.after || record.answer || record.question || '';
     const category = record.category || record.kind || record.mode || '';
@@ -402,6 +436,12 @@
     const extra2 = record.lesson || record.firstStep || record.deadline || record.question || record.linkUrl || '';
     const extra3 = record.nextAction || record.priority || record.status || record.success || record.tags || '';
     return { title, body, category, extra1, extra2, extra3 };
+  }
+
+  function sanitizeRecordForSheet(record = {}) {
+    const copy = { ...record };
+    if (copy.imageData) copy.imageData = `[base64 image omitted: ${String(record.imageData).length} chars]`;
+    return copy;
   }
 
   function buildSheetPayload(action, section, record = {}) {
@@ -413,7 +453,7 @@
       sentAt: nowIso(),
       section,
       sectionLabel: sectionLabel(section),
-      id: record.id || '',
+      id: record.id || (section === 'profile' ? 'profile_main' : ''),
       category: normalized.category,
       title: normalized.title,
       body: normalized.body,
@@ -426,7 +466,10 @@
       imageUrl: record.imageUrl || '',
       tags: record.tags || '',
       hasImage: Boolean(record.imageData || record.imageUrl),
-      raw: record
+      imageData: record.imageData || '',
+      imageName: record.imageName || '',
+      imageMimeType: record.imageMimeType || '',
+      raw: sanitizeRecordForSheet(record)
     };
   }
 
@@ -465,14 +508,15 @@
   async function syncAllToSpreadsheet() {
     if (!getGasUrl()) return showToast('GAS WebアプリURLを先に設定してください', 'warn');
     const all = getAllEntries();
-    showToast(`全データ ${all.length}件を送信します`, 'normal');
+    showToast(`全データ ${all.length + (hasProfileData() ? 1 : 0)}件を送信します`, 'normal');
+    if (hasProfileData()) await sendToSpreadsheet('syncAll', 'profile', buildProfileRecord());
     for (const entry of all) {
       await sendToSpreadsheet('syncAll', entry.section, entry);
     }
     for (const history of state.aiHistory) {
       await sendToSpreadsheet('syncAll', 'aiHistory', history);
     }
-    showToast('全データ送信が完了しました。スプレッドシートを確認してください。', 'success');
+    showToast('全データ送信が完了しました。NotebookLM_Sourceシートにも反映されます。', 'success');
   }
 
   function saveGasSettings() {
@@ -489,6 +533,20 @@
     if (!url) return showToast('GAS WebアプリURLを入力してください', 'warn');
     updateState(s => { s.profile.gasUrl = url; }, null);
     await sendToSpreadsheet('test', 'system', { id: uid(), title: '接続テスト', body: 'Life Compass Coachからの接続テストです。', createdAt: nowIso(), updatedAt: nowIso() }, { manual: true });
+  }
+
+  function openNotebookDocGenerator() {
+    const url = getGasUrl();
+    if (!url) return showToast('GAS WebアプリURLを先に設定してください', 'warn');
+    const actionUrl = `${url}${url.includes('?') ? '&' : '?'}action=updateNotebookDoc`;
+    window.open(actionUrl, '_blank', 'noopener');
+    showToast('別タブでNotebookLM用まとめDocsの更新を実行します。表示されたdocUrlをNotebookLMに追加してください。', 'success');
+  }
+
+  async function requestNotebookSourceRefresh() {
+    if (!getGasUrl()) return showToast('GAS WebアプリURLを先に設定してください', 'warn');
+    await sendToSpreadsheet('refreshNotebookSource', 'system', { id: uid(), title: 'NotebookLM_Source更新依頼', body: 'Life CompassのNotebookLM向け整理シートを更新するためのリクエストです。', createdAt: nowIso(), updatedAt: nowIso() }, { manual: true });
+    showToast('NotebookLM向け整理シート更新をGASへ送信しました。', 'success');
   }
 
   function structuredCloneSafe(obj) {
@@ -514,6 +572,7 @@
       document.getElementById(`view-${t.id}`)?.classList.toggle('hidden', t.id !== id);
     });
     mountTabs();
+    if (id === 'profile') renderProfile();
     if (id === 'import') renderImport();
     if (id === 'map') renderMindMap();
     if (id === 'ai') renderAi();
@@ -648,8 +707,107 @@
     return `<div class="rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center font-black text-slate-500">${message}</div>`;
   }
 
+  const profileFields = [
+    ['name', '名前・呼び名'], ['age', '年齢'], ['familyStructure', '家族構成'], ['medicalHistory', '既往歴・健康上の注意'],
+    ['likedThings', '好きだったこと'], ['strongThings', '得意だったこと'], ['workHistory', '仕事歴・実績'], ['traumaHistory', '自分にとってのトラウマ'],
+    ['values', '大切にしたい価値観'], ['personalityTraits', '性格・考え方の傾向'], ['lifeTimeline', '人生年表・大きな出来事'],
+    ['currentConstraints', '今の制約・配慮してほしいこと'], ['supportNeeded', 'AIにしてほしい支援'], ['memo', '自由メモ']
+  ];
+
+  function hasProfileData(profile = state.profile) {
+    return profileFields.some(([key]) => String(profile?.[key] || '').trim());
+  }
+
+  function profileCompleteness(profile = state.profile) {
+    const filled = profileFields.filter(([key]) => String(profile?.[key] || '').trim()).length;
+    return { filled, total: profileFields.length, percent: Math.round((filled / profileFields.length) * 100) };
+  }
+
+  function profileSummary(profile = state.profile) {
+    return profileFields
+      .map(([key, label]) => String(profile?.[key] || '').trim() ? `【${label}】\n${String(profile[key]).trim()}` : '')
+      .filter(Boolean)
+      .join('\n\n') || 'プロフィール未入力';
+  }
+
+  function buildProfileRecord() {
+    return {
+      id: 'profile_main',
+      category: 'basicProfile',
+      title: 'プロフィール',
+      body: profileSummary(),
+      ...profileFields.reduce((acc, [key]) => { acc[key] = state.profile[key] || ''; return acc; }, {}),
+      createdAt: state.createdAt || nowIso(),
+      updatedAt: state.profile.profileUpdatedAt || state.updatedAt || nowIso()
+    };
+  }
+
+  function renderProfile() {
+    const p = state.profile || {};
+    const c = profileCompleteness(p);
+    const field = (label, name, placeholder = '') => textareaHtml(label, name, placeholder, p[name] || '');
+    document.getElementById('view-profile').innerHTML = `
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-5 space-y-6">
+          <div class="panel border-sky-600">
+            <h2 class="panel-title text-sky-800"><i data-lucide="user-round-cog"></i> 自分のプロフィール</h2>
+            <p class="text-sm font-bold text-slate-600 mt-2 mb-4">AIコーチが人生全体を判断するための土台です。無理に全部書かず、必要なところからでOKです。トラウマや既往歴は慎重に扱う大切な情報なので、保存先と共有範囲を確認して使ってください。</p>
+            <form id="profileForm" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${inputHtml('名前・呼び名', 'name', '例：相棒', p.name || '')}
+                ${inputHtml('年齢', 'age', '例：61歳', p.age || '')}
+              </div>
+              ${field('家族構成', 'familyStructure', '例：母、子ども、介護経験など')}
+              ${field('既往歴・健康上の注意', 'medicalHistory', '例：目、腰、血圧、通院歴、日常生活で配慮すること')}
+              ${field('好きだったこと', 'likedThings', '例：子どもの頃好きだったこと、今も心が動くこと')}
+              ${field('得意だったこと', 'strongThings', '例：人に褒められたこと、自然にできたこと、売上・管理・接客など')}
+              ${field('仕事歴・実績', 'workHistory', '例：職歴、成果、役割、売上、経験年数')}
+              ${field('自分にとってのトラウマ', 'traumaHistory', '例：人生に影響した出来事、避けたい状況、触れ方に注意してほしいこと')}
+              ${field('大切にしたい価値観', 'values', '例：自由、安心、家族、誠実、健康、挑戦')}
+              ${field('性格・考え方の傾向', 'personalityTraits', '例：慎重、考えすぎる、追い込まれると強い、など')}
+              ${field('人生年表・大きな出来事', 'lifeTimeline', '例：幼少期、学生時代、仕事、家族、転機、病気、独立準備')}
+              ${field('今の制約・配慮してほしいこと', 'currentConstraints', '例：体調、視力、運転、時間、お金、家族事情')}
+              ${field('AIにしてほしい支援', 'supportNeeded', '例：現実的に背中を押してほしい、危ない時は止めてほしい')}
+              ${field('自由メモ', 'memo', 'その他AIに知っておいてほしいこと')}
+              <button class="btn-primary btn-blue w-full" type="submit"><i data-lucide="save" class="w-5 h-5"></i> プロフィールを保存する</button>
+            </form>
+          </div>
+        </div>
+        <div class="lg:col-span-7 space-y-6">
+          <div class="panel border-sky-700">
+            <div class="panel-head"><h2 class="panel-title text-sky-800"><i data-lucide="clipboard-check"></i> 入力状況</h2><span class="count-pill">${c.filled}/${c.total}項目</span></div>
+            <div class="rounded-2xl border-2 border-sky-200 bg-sky-50 p-4">
+              <div class="h-4 rounded-full bg-white border-2 border-sky-200 overflow-hidden"><div class="h-full bg-sky-500" style="width:${c.percent}%"></div></div>
+              <p class="text-sm font-black text-sky-800 mt-3">プロフィール充実度：${c.percent}%</p>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2 class="panel-title"><i data-lucide="user-search"></i> AIが見るプロフィール要約</h2><button id="sendProfileGasBtn" class="btn-soft text-sm"><i data-lucide="cloud-upload" class="w-4 h-4"></i> GASへ送信</button></div>
+            <div class="prose-box rounded-2xl bg-slate-50 border-2 border-slate-200 p-4 md:p-6 font-bold text-slate-700 whitespace-pre-wrap leading-relaxed">${escapeHtml(profileSummary(p))}</div>
+          </div>
+          <div class="panel border-amber-500">
+            <h2 class="panel-title text-amber-800"><i data-lucide="shield-alert"></i> 大切な注意</h2>
+            <p class="text-sm font-bold text-slate-700 mt-3 leading-relaxed">既往歴やトラウマはとても個人的な情報です。このツールではAI分析の質を上げる材料になりますが、GAS URLやスプレッドシートの共有範囲は必ず非公開で運用してください。書きたくない項目は空欄で大丈夫です。</p>
+          </div>
+        </div>
+      </div>`;
+    const form = document.getElementById('profileForm');
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const d = formData(form);
+      if (updateState(st => { Object.assign(st.profile, d); st.profile.profileUpdatedAt = nowIso(); }, 'プロフィールを保存しました')) {
+        autoSendToSpreadsheet('create', 'profile', buildProfileRecord());
+      }
+    };
+    document.getElementById('sendProfileGasBtn').onclick = async () => {
+      await sendToSpreadsheet('manual', 'profile', buildProfileRecord(), { manual: true });
+    };
+    refreshIcons();
+  }
+
   function renderHome() {
     const counts = {
+      profile: profileCompleteness().filled,
       current: state.current.length,
       mind: state.mind.length,
       insights: state.insights.length,
@@ -671,12 +829,13 @@
               <div>
                 <p class="text-sm font-black text-blue-700">${today()}</p>
                 <h2 class="text-2xl md:text-3xl font-black mt-1">人生の現在地を、今日の一歩に変える</h2>
-                <p class="text-slate-700 font-bold mt-3 leading-relaxed">書き出した事実・心・気づき・反省・前提・未来像をAIが総合的に見て、今の相棒に必要な行動を提案します。</p>
+                <p class="text-slate-700 font-bold mt-3 leading-relaxed">プロフィール・事実・心・気づき・反省・前提・未来像をAIが総合的に見て、今の相棒に必要な行動を提案します。</p>
               </div>
               <button class="btn-primary btn-blue shrink-0" onclick="LifeCompass.switchTab('ai')"><i data-lucide="sparkles" class="w-5 h-5"></i> AIコーチを開く</button>
             </div>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            ${statCard('プロフィール', counts.profile, 'user-round-cog', 'profile')}
             ${statCard('現在地', counts.current, 'map-pin', 'current')}
             ${statCard('心の声', counts.mind, 'heart', 'mind')}
             ${statCard('気づき', counts.insights, 'lightbulb', 'insights')}
@@ -1021,7 +1180,9 @@
   }
 
   function buildMindMapData(mode) {
+    const profileGroup = hasProfileData() ? [buildProfileRecord()] : [];
     const allGroups = [
+      ['profile','プロフィール','user-round-cog',profileGroup],
       ['current','現在地','map-pin',state.current], ['mind','心の声','heart',state.mind], ['insights','気づき','lightbulb',state.insights],
       ['reflection','反省', 'rotate-ccw', state.reflections], ['premise','前提','scale',state.premises], ['future','未来','mountain-snow',state.future],
       ['goals','目標','target',state.goals], ['imports','履歴','file-input',state.imports], ['ai','AI履歴','bot',state.aiHistory]
@@ -1029,8 +1190,8 @@
     let groups = allGroups;
     if (mode === 'future') groups = allGroups.filter(g => ['future','goals','premise','insights'].includes(g[0]));
     if (mode === 'premise') groups = allGroups.filter(g => ['premise','mind','reflection','insights'].includes(g[0]));
-    if (mode === 'history') groups = allGroups.filter(g => ['imports','current','future','goals','insights'].includes(g[0]));
-    if (mode === 'ai') groups = allGroups.filter(g => ['ai','premise','goals','future','imports'].includes(g[0]));
+    if (mode === 'history') groups = allGroups.filter(g => ['profile','imports','current','future','goals','insights'].includes(g[0]));
+    if (mode === 'ai') groups = allGroups.filter(g => ['profile','ai','premise','goals','future','imports'].includes(g[0]));
     const cx = 50, cy = 50;
     const nodes = [`<div class="mind-node center" style="left:${cx}%;top:${cy}%;"><div class="text-lg">自分</div><div class="text-xs mt-1 opacity-90">Life Compass</div><span class="node-count">${getAllEntries().length}</span></div>`];
     const lines = [];
@@ -1096,7 +1257,7 @@
           <div class="panel">
             <h2 class="panel-title"><i data-lucide="list-checks"></i> AIが見るデータ</h2>
             <div class="mt-4 grid grid-cols-2 gap-2 text-sm font-black text-slate-700">
-              ${miniCount('現在地', state.current.length)}${miniCount('心の声', state.mind.length)}${miniCount('気づき', state.insights.length)}${miniCount('反省', state.reflections.length)}${miniCount('前提', state.premises.length)}${miniCount('未来', state.future.length)}${miniCount('目標', state.goals.length)}${miniCount('履歴', state.imports.length)}${miniCount('AI履歴', state.aiHistory.length)}
+              ${miniCount('プロフィール', profileCompleteness().filled)}${miniCount('現在地', state.current.length)}${miniCount('心の声', state.mind.length)}${miniCount('気づき', state.insights.length)}${miniCount('反省', state.reflections.length)}${miniCount('前提', state.premises.length)}${miniCount('未来', state.future.length)}${miniCount('目標', state.goals.length)}${miniCount('履歴', state.imports.length)}${miniCount('AI履歴', state.aiHistory.length)}
             </div>
           </div>
         </div>
@@ -1132,14 +1293,14 @@
   function miniCount(label, count) {
     const theme = frameThemeClassByLabel(label);
     const style = frameThemeStyle(label);
-    const iconMap = { '現在地':'map-pin', '心の声':'heart', '気づき':'lightbulb', '反省':'rotate-ccw', '前提':'scale', '未来':'mountain-snow', '目標':'target', '履歴':'file-input', 'AI履歴':'bot' };
+    const iconMap = { 'プロフィール':'user-round-cog', '現在地':'map-pin', '心の声':'heart', '気づき':'lightbulb', '反省':'rotate-ccw', '前提':'scale', '未来':'mountain-snow', '目標':'target', '履歴':'file-input', 'AI履歴':'bot' };
     const icon = iconMap[label] || 'circle';
     return `<div class="mini-count-card ${theme}" style="${style.card}"><span class="inline-flex items-center gap-2"><span class="mini-icon frame-icon" style="${style.iconBox}${style.icon}"><i data-lucide="${icon}"></i></span><span style="${style.icon}">${label}</span></span><span class="text-lg font-black">${count}</span></div>`;
   }
 
   function buildPrompt(mode, question) {
     const bundle = buildDataBundle();
-    return `あなたは、ユーザーの人生全体を現実的かつ前向きに支援するAI人生コーチです。甘い励ましだけでなく、事実・前提・目標・体調・お金・感情・インポートされた人生履歴を総合して、本人の傾向、繰り返しパターン、強み、注意点、具体的な行動まで落とし込んでください。医療・法律・投資の断定は避け、必要なら専門家確認を促してください。
+    return `あなたは、ユーザーの人生全体を現実的かつ前向きに支援するAI人生コーチです。甘い励ましだけでなく、プロフィール・既往歴・家族構成・仕事歴・トラウマ・事実・前提・目標・体調・お金・感情・インポートされた人生履歴を総合して、本人の傾向、繰り返しパターン、強み、注意点、具体的な行動まで落とし込んでください。医療・法律・投資の断定は避け、必要なら専門家確認を促してください。
 
 【今回の診断モード】${mode}
 【追加相談】${question || '特になし'}
@@ -1165,13 +1326,16 @@ ${bundle}
   function buildDataBundle() {
     const pick = (arr, fields) => arr.slice(0, 25).map((x, i) => `${i+1}. ` + fields.map(f => x[f] ? `${f}:${x[f]}` : '').filter(Boolean).join(' / ')).join('\n') || 'なし';
     return [
+      `■プロフィール\n${profileSummary()}`,
       `■現在地\n${pick(state.current, ['category','title','body','concern'])}`,
       `■心の声\n${pick(state.mind, ['category','title','body','intensity'])}`,
       `■気づき\n${pick(state.insights, ['category','title','body','action'])}`,
       `■反省\n${pick(state.reflections, ['category','title','body','cause','lesson','nextAction'])}`,
       `■人生の前提\n${pick(state.premises, ['kind','category','before','after','decision'])}`,
       `■未来設計\n${pick(state.future, ['category','title','body','reason','firstStep','priority','status'])}`,
-      `■目標・目的\n${pick(state.goals, ['category','title','body','why','deadline','success','priority'])}`
+      `■目標・目的\n${pick(state.goals, ['category','title','body','why','deadline','success','priority'])}`,
+      `■インポート履歴\n${pick(state.imports, ['category','title','period','body','tags'])}`,
+      `■最近のAI履歴\n${pick(state.aiHistory, ['mode','question','answer'])}`
     ].join('\n\n');
   }
 
@@ -1253,7 +1417,7 @@ ${bundle}
     return `【APIなし簡易コーチング】
 
 1. 今の現在地
-保存データを見る限り、現在地 ${state.current.length}件、心の声 ${state.mind.length}件、気づき ${state.insights.length}件、反省 ${state.reflections.length}件、前提 ${state.premises.length}件、未来設計 ${state.future.length}件、目標 ${state.goals.length}件が記録されています。まず「書き出せている」こと自体が大きいです。頭の中だけで戦うより、紙に出した方が勝率は上がります。
+プロフィール ${profileCompleteness().filled}/${profileCompleteness().total}項目、保存データを見る限り、現在地 ${state.current.length}件、心の声 ${state.mind.length}件、気づき ${state.insights.length}件、反省 ${state.reflections.length}件、前提 ${state.premises.length}件、未来設計 ${state.future.length}件、目標 ${state.goals.length}件が記録されています。まず「書き出せている」こと自体が大きいです。頭の中だけで戦うより、紙に出した方が勝率は上がります。
 
 2. 目標に近いもの
 ${highGoals.length ? highGoals.slice(0,3).map(g => `・${g.title}：${shorten(g.body, 80)}`).join('\n') : '・高優先度の目標がまだありません。まず1つだけ決めるとAI判断が鋭くなります。'}
@@ -1303,6 +1467,20 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
               <button id="syncAllGasBtn" class="btn-soft w-full"><i data-lucide="refresh-cw" class="w-5 h-5"></i> 既存データを全件スプレッドシートへ送信</button>
             </div>
           </div>
+          <div class="panel border-sky-700">
+            <h2 class="panel-title text-sky-800"><i data-lucide="book-open-check"></i> NotebookLM連携</h2>
+            <p class="text-sm font-bold text-slate-600 mt-2 mb-4">NotebookLMには保存用スプレッドシートをそのままソース追加できます。さらにGAS側で読みやすい <span class="font-black">LifeCompass_NotebookLM_Source</span> シートと、必要な時だけ使うまとめGoogle Docsも作れます。</p>
+            <div class="space-y-3">
+              <button id="refreshNotebookSourceBtn" class="btn-soft w-full"><i data-lucide="table-properties" class="w-5 h-5"></i> NotebookLM向け整理シートを更新依頼</button>
+              <button id="openNotebookDocBtn" class="btn-primary btn-blue w-full"><i data-lucide="file-text" class="w-5 h-5"></i> NotebookLM用まとめDocsを作成/更新</button>
+              <div class="rounded-2xl bg-sky-50 border-2 border-sky-200 p-4 text-xs md:text-sm font-bold text-slate-700 leading-relaxed">
+                <p class="font-black text-sky-900 mb-1">おすすめ運用</p>
+                <p>1. NotebookLMにはスプレッドシート本体をソース追加</p>
+                <p>2. 深く整理したい時だけ、このボタンでまとめDocsを更新</p>
+                <p>3. 写真はDrive保存、シートにはDrive URLと参考URLを保存</p>
+              </div>
+            </div>
+          </div>
           <div class="panel">
             <h2 class="panel-title"><i data-lucide="database"></i> バックアップ・復元</h2>
             <p class="text-sm font-bold text-slate-600 mt-2 mb-4">人生データは大事です。たまにJSONを書き出してください。これは“人生のセーブポイント”です。</p>
@@ -1328,6 +1506,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
               ${statusRow('推定サイズ', `${(size/1024).toFixed(1)} KB`)}
               ${statusRow('自動バックアップ', localStorage.getItem(BACKUP_KEY) ? 'あり' : 'なし')}
               ${statusRow('GAS連携', getGasUrl() ? (state.profile.gasSyncEnabled !== false ? '自動送信ON' : 'URL設定済み / 自動送信OFF') : '未設定')}
+              ${statusRow('NotebookLM連携', getGasUrl() ? 'NotebookLM_Source自動追記 / Docs生成可' : 'GAS URL未設定')}
               ${statusRow('GAS URL', getGasUrl() || '未設定')}
               ${statusRow('AIモデル', 'Gemini: gemini-2.5-flash / ChatGPT: gpt-5.4-mini（GAS側固定）')}
               ${statusRow('未送信キュー', `${(safeParse(localStorage.getItem('life_compass_gas_unsent_queue'), [], 'life_compass_gas_unsent_queue') || []).length}件`)}
@@ -1350,6 +1529,8 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     document.getElementById('saveGasSettingsBtn').onclick = saveGasSettings;
     document.getElementById('testGasBtn').onclick = testGasConnection;
     document.getElementById('syncAllGasBtn').onclick = syncAllToSpreadsheet;
+    document.getElementById('refreshNotebookSourceBtn').onclick = requestNotebookSourceRefresh;
+    document.getElementById('openNotebookDocBtn').onclick = openNotebookDocGenerator;
     document.getElementById('resetBtn').onclick = resetAll;
     refreshIcons();
   }
@@ -1384,6 +1565,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
 
   function exportCsv() {
     const rows = [['section','category','title','body','extra','createdAt']];
+    if (hasProfileData()) rows.push(['プロフィール', 'basicProfile', 'プロフィール', profileSummary(), '', state.profile.profileUpdatedAt || state.updatedAt]);
     getAllEntries().forEach(e => rows.push([e.sectionLabel, e.category || e.kind || '', e.title || e.before || '', e.body || e.after || '', e.concern || e.action || e.nextAction || e.decision || '', e.createdAt]));
     const csv = rows.map(r => r.map(v => `"${String(v || '').replaceAll('"','""')}"`).join(',')).join('\n');
     downloadFile(`life-compass-coach-${new Date().toISOString().slice(0,10)}.csv`, '\ufeff' + csv, 'text/csv;charset=utf-8');
@@ -1391,7 +1573,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
   }
 
   function exportMarkdown() {
-    const lines = [`# Life Compass Coach Export`, ``, `Exported: ${new Date().toLocaleString('ja-JP')}`, ``];
+    const lines = [`# Life Compass Coach Export`, ``, `Exported: ${new Date().toLocaleString('ja-JP')}`, ``, `## プロフィール`, profileSummary(), ``, `---`, ``];
     getAllEntries().forEach(e => {
       lines.push(`## ${e.sectionLabel}｜${e.title || e.before || e.category || '記録'}`);
       lines.push(`- カテゴリ: ${e.category || e.kind || ''}`);
@@ -1442,6 +1624,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     renderForms();
     bindForms();
     renderLists();
+    if (activeTab === 'profile') renderProfile();
     if (activeTab === 'import') renderImport();
     if (activeTab === 'map') renderMindMap();
     if (activeTab === 'ai') renderAi();
@@ -1455,7 +1638,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     document.getElementById('quickSaveBtn').onclick = () => showToast(`最終保存：${new Date(state.updatedAt).toLocaleString('ja-JP')} / GAS：${isGasSyncEnabled() ? 'ON' : 'OFF'}`, 'success');
   }
 
-  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, renderMindMap, state: () => state };
+  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, renderMindMap, openNotebookDocGenerator, state: () => state };
 
   document.addEventListener('DOMContentLoaded', () => {
     injectEnhancedUiStyles();

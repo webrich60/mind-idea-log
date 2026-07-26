@@ -1,20 +1,16 @@
-# Life Compass Coach｜人生統合AIコーチ v4
+# Life Compass Coach｜人生統合AIコーチ v4.2 NotebookLM対応
 
 GitHub Pages + GAS + Google スプレッドシートで動く、人生記録・AIコーチング・マインドマップ可視化ツールです。
 
-## v4で追加したこと
+## v4.2で追加したこと
 
-- 上部タブをカテゴリ別の淡い色に変更
-- 各記録に参考URL・写真URL・写真ファイル・タグを添付可能
-- 写真ファイルはブラウザ内に圧縮保存
-- 「履歴インポート」タブを追加
-  - 自分の人生履歴、仕事実績、健康履歴、過去ログ、会話メモなどを貼り付け可能
-  - txt / md / csv / json ファイルの読み込みにも対応
-- AIコーチがインポート履歴も含めて傾向分析
-- 「マインドマップ」タブを追加
-  - 現在地、心の声、気づき、反省、前提、未来、目標、履歴、AI履歴を視覚化
-  - 自分全体 / 未来設計 / 前提の整理 / 履歴傾向 / AI分析で切り替え可能
-- GAS保存の列に linkUrl / imageUrl / tags / hasImage を追加
+- NotebookLMにそのまま追加しやすい `LifeCompass_NotebookLM_Source` シートを自動生成
+- 保存データを通常の保存シートだけでなく、NotebookLM向け整理シートにも自動追記
+- 必要なときだけ `LifeCompass_NotebookLM_Summary` Google Docsを作成・更新
+- 写真ファイルをGAS経由でGoogle Driveフォルダに保存
+- スプレッドシートには写真ファイル本体ではなく、DriveファイルID・Drive表示URL・参考URLを保存
+- 既存スプレッドシートIDを `SPREADSHEET_ID` で指定可能
+- 写真フォルダ `WEBRICH_LifeCompass_Photos` を利用。`DRIVE_FOLDER_ID` 未設定ならGASが同名フォルダを自動作成
 
 ## GitHubにアップするファイル
 
@@ -26,14 +22,19 @@ GitHub Pages + GAS + Google スプレッドシートで動く、人生記録・A
 
 - `Code.gs`
 
-## GASプロパティ
+## GASスクリプトプロパティ
 
-Geminiを使う場合：
+最低限、既存のスプレッドシートを使う場合：
+
+- `SPREADSHEET_ID` : スプレッドシートIDだけ
+
+写真保存フォルダを手動指定する場合：
+
+- `DRIVE_FOLDER_ID` : Google DriveフォルダIDだけ
+
+AIを使う場合：
 
 - `GEMINI_API_KEY`
-
-ChatGPTを使う場合：
-
 - `OPENAI_API_KEY`
 
 モデル名は `Code.gs` 内に固定しています。
@@ -42,20 +43,26 @@ ChatGPTを使う場合：
 - ChatGPT: `gpt-5.4-mini`
 - fallback: `gpt-5-mini`
 
-## 使い方
+## NotebookLMのおすすめ運用
 
-1. Googleスプレッドシートを作成
-2. Apps Scriptを開く
-3. `Code.gs` を貼り付け
-4. `setupLifeCompassSheet()` を1回実行
-5. Webアプリとしてデプロイ
-6. `/exec` で終わるGAS URLをコピー
-7. アプリの「バックアップ」タブに貼り付け
-8. 接続テスト
+1. NotebookLMにはスプレッドシート本体をソースとして追加します。
+2. その中でも `LifeCompass_NotebookLM_Source` シートは、NotebookLMが読みやすいように整理されたシートです。
+3. さらに深く分析したい時だけ、アプリの「バックアップ」タブから「NotebookLM用まとめDocsを作成/更新」を押します。
+4. 表示された `docUrl` をNotebookLMに追加します。
+
+## GAS初期設定
+
+1. 既存のスプレッドシートを開く
+2. 拡張機能 → Apps Script
+3. `Code.gs` を貼り替える
+4. スクリプトプロパティに `SPREADSHEET_ID` を設定
+5. 写真フォルダを手動作成した場合は `DRIVE_FOLDER_ID` も設定
+6. `setupLifeCompassSheet()` を1回実行
+7. Webアプリとしてデプロイ
+8. `/exec` で終わるGAS URLをアプリの「バックアップ」タブに保存
 
 ## 注意
 
-- スマホとPCではブラウザ保存領域が別です。
-- 長く使う場合はJSONバックアップを定期的に保存してください。
-- 写真ファイルをたくさん保存するとブラウザ容量を使います。重くなる場合は写真URL添付を優先してください。
-- APIキーはGitHubに絶対に書かず、GASのスクリプトプロパティに保存してください。
+- 既往歴やトラウマは非常に個人的な情報です。スプレッドシート・Driveフォルダ・NotebookLMの共有設定は必ず非公開で運用してください。
+- 写真はDriveに保存し、スプレッドシートにはURLとファイルIDだけ保存します。
+- NotebookLMはスプレッドシート更新を参照できますが、反映タイミングにラグが出る可能性があります。重要な分析前はNotebookLM側でソースの再確認や再生成をしてください。
