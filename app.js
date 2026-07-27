@@ -302,25 +302,38 @@
 
       .edit-modal-backdrop { position:fixed; inset:0; z-index:120; background:rgba(15,23,42,.68); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:1rem; }
       .edit-modal-backdrop.hidden { display:none; }
-      .edit-modal-panel { width:min(980px,100%); max-height:94vh; overflow:hidden; background:#fff; border:2px solid #94a3b8; border-radius:1.5rem; box-shadow:0 28px 80px rgba(15,23,42,.35); display:flex; flex-direction:column; }
-      .edit-modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding:1rem 1.2rem; border-bottom:2px solid #e2e8f0; background:linear-gradient(135deg,#eff6ff,#f8fafc); }
-      .edit-modal-body { overflow:auto; padding:1rem 1.2rem 1.25rem; }
+      .edit-modal-panel { width:min(920px,100%); max-height:94vh; overflow:hidden; background:#fff; border:2px solid #94a3b8; border-radius:1.5rem; box-shadow:0 28px 80px rgba(15,23,42,.35); display:flex; flex-direction:column; }
+      .edit-modal-head { flex:0 0 auto; display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding:.9rem 1.15rem; border-bottom:2px solid #e2e8f0; background:linear-gradient(135deg,#eff6ff,#f8fafc); }
+      .edit-modal-body { flex:1 1 auto; min-height:0; overflow:auto; padding:1rem 1.15rem 1.25rem; scroll-padding-bottom:100px; }
       .edit-modal-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
       .edit-modal-grid .full { grid-column:1/-1; }
-      .edit-modal-body .textarea { min-height:150px; }
-      .edit-modal-body .textarea.long { min-height:260px; }
-      .edit-modal-foot { display:flex; gap:.75rem; justify-content:flex-end; padding:1rem 1.2rem; border-top:2px solid #e2e8f0; background:#f8fafc; }
+      .edit-basic-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+      .edit-basic-grid .full { grid-column:1/-1; }
+      .edit-modal-body .textarea { min-height:120px; }
+      .edit-modal-body .textarea.long { min-height:clamp(300px,46vh,520px); line-height:1.75; resize:vertical; }
+      .edit-details { margin-top:1rem; border:2px solid #dbeafe; border-radius:1rem; background:#f8fbff; overflow:hidden; }
+      .edit-details summary { cursor:pointer; display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.9rem 1rem; font-weight:900; color:#1e3a8a; list-style:none; user-select:none; }
+      .edit-details summary::-webkit-details-marker { display:none; }
+      .edit-details summary::after { content:'＋'; font-size:1.2rem; line-height:1; }
+      .edit-details[open] summary::after { content:'−'; }
+      .edit-details-content { padding:0 1rem 1rem; }
+      .edit-modal-foot { flex:0 0 auto; display:flex; gap:.75rem; justify-content:flex-end; padding:.85rem 1.15rem; border-top:2px solid #e2e8f0; background:rgba(248,250,252,.97); box-shadow:0 -10px 24px rgba(15,23,42,.08); }
+      .edit-modal-foot .btn-primary { min-width:190px; }
       .edit-char-count { margin-top:.35rem; text-align:right; font-size:.75rem; font-weight:900; color:#64748b; }
       .edit-image-preview { max-width:220px; max-height:160px; object-fit:cover; border-radius:1rem; border:2px solid #cbd5e1; }
       body.modal-open { overflow:hidden; }
       @media (max-width: 700px) {
         .edit-modal-backdrop { padding:0; align-items:stretch; }
         .edit-modal-panel { max-height:none; height:100dvh; border-radius:0; border-width:0; }
-        .edit-modal-grid { grid-template-columns:1fr; }
-        .edit-modal-grid .full { grid-column:auto; }
-        .edit-modal-head, .edit-modal-body, .edit-modal-foot { padding-left:.9rem; padding-right:.9rem; }
-        .edit-modal-foot { position:sticky; bottom:0; }
-        .edit-modal-foot .btn-soft, .edit-modal-foot .btn-primary { flex:1; }
+        .edit-modal-head { padding-top:max(.75rem,env(safe-area-inset-top)); }
+        .edit-modal-grid, .edit-basic-grid { grid-template-columns:1fr; }
+        .edit-modal-grid .full, .edit-basic-grid .full { grid-column:auto; }
+        .edit-modal-head, .edit-modal-body, .edit-modal-foot { padding-left:.85rem; padding-right:.85rem; }
+        .edit-modal-body { padding-top:.75rem; padding-bottom:1rem; }
+        .edit-modal-body .textarea.long { min-height:48dvh; }
+        .edit-modal-foot { padding-bottom:max(.8rem,env(safe-area-inset-bottom)); }
+        .edit-modal-foot .btn-soft { flex:.8; }
+        .edit-modal-foot .btn-primary { flex:1.2; min-width:0; }
       }
     `;
     document.head.appendChild(style);
@@ -1341,7 +1354,7 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     modal.id = 'entryEditModal';
     modal.className = 'edit-modal-backdrop hidden';
     modal.innerHTML = `<section class="edit-modal-panel" role="dialog" aria-modal="true" aria-labelledby="entryEditTitle">
-      <div class="edit-modal-head"><div><p class="text-xs font-black text-blue-700">完全編集モード</p><h2 id="entryEditTitle" class="text-xl font-black mt-1">記録を編集</h2><p class="text-xs font-bold text-slate-600 mt-1">本文だけでなく、カテゴリ・タイトル・補足・タグ・URL・日時まで修正できます。</p></div><button type="button" class="btn-icon" data-edit-close aria-label="閉じる"><i data-lucide="x"></i></button></div>
+      <div class="edit-modal-head"><div><p class="text-xs font-black text-blue-700">完全編集モード</p><h2 id="entryEditTitle" class="text-xl font-black mt-1">記録を編集</h2><p class="text-xs font-bold text-slate-600 mt-1">基本項目はすぐ編集でき、補足・タグ・URL・日時は「詳細設定」から必要なときだけ開けます。</p></div><button type="button" class="btn-icon" data-edit-close aria-label="閉じる"><i data-lucide="x"></i></button></div>
       <form id="entryEditForm" class="contents"><div class="edit-modal-body"><div id="entryEditFields" class="edit-modal-grid"></div></div><div class="edit-modal-foot"><button type="button" class="btn-soft" data-edit-close>キャンセル</button><button type="submit" class="btn-primary btn-blue"><i data-lucide="save" class="w-5 h-5"></i>変更を保存</button></div></form>
     </section>`;
     document.body.appendChild(modal);
@@ -1368,15 +1381,22 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     modal.dataset.id = id;
     document.getElementById('entryEditTitle').textContent = `${labelMap[section]}を完全編集`;
     const mediaImage = item.imageData || item.imageUrl || '';
-    document.getElementById('entryEditFields').innerHTML = schema.map(f => editFieldHtml(f, item)).join('') + `
-      <div class="full rounded-2xl bg-slate-50 border-2 border-slate-200 p-4"><p class="text-sm font-black text-slate-800 mb-3">添付・管理情報</p><div class="edit-modal-grid">
-        <div><label class="field-label">参考URL</label><input class="input" type="url" name="linkUrl" value="${escapeHtml(item.linkUrl || '')}" placeholder="https://..."></div>
-        <div><label class="field-label">写真URL</label><input class="input" type="url" name="imageUrl" value="${escapeHtml(item.imageUrl || '')}" placeholder="https://..."></div>
-        <div class="full"><label class="field-label">タグ（カンマ区切り）</label><input class="input" type="text" name="tags" value="${escapeHtml(item.tags || '')}"></div>
-        <div><label class="field-label">写真を差し替える</label><input class="input" type="file" name="imageFile" accept="image/*"></div>
-        <div><label class="field-label">記録日時</label><input class="input" type="datetime-local" name="createdAt" value="${toDateTimeLocal(item.createdAt)}"></div>
-        ${mediaImage ? `<div class="full"><img class="edit-image-preview" src="${escapeHtml(mediaImage)}" alt="現在の添付画像"><label class="flex items-center gap-2 mt-2 text-sm font-black"><input type="checkbox" name="removeImage" value="1" class="w-5 h-5"> 現在の写真を削除する</label></div>` : ''}
-      </div></div>`;
+    const primaryFields = schema.slice(0, 3);
+    const detailFields = schema.slice(3);
+    document.getElementById('entryEditFields').innerHTML = `
+      <div class="full edit-basic-grid">${primaryFields.map(f => editFieldHtml(f, item)).join('')}</div>
+      <details class="full edit-details">
+        <summary><span>詳細設定・添付情報</span><span class="text-xs text-slate-500">必要なときだけ開く</span></summary>
+        <div class="edit-details-content"><div class="edit-modal-grid">
+          ${detailFields.map(f => editFieldHtml(f, item)).join('')}
+          <div><label class="field-label">参考URL</label><input class="input" type="url" name="linkUrl" value="${escapeHtml(item.linkUrl || '')}" placeholder="https://..."></div>
+          <div><label class="field-label">写真URL</label><input class="input" type="url" name="imageUrl" value="${escapeHtml(item.imageUrl || '')}" placeholder="https://..."></div>
+          <div class="full"><label class="field-label">タグ（カンマ区切り）</label><input class="input" type="text" name="tags" value="${escapeHtml(item.tags || '')}"></div>
+          <div><label class="field-label">写真を差し替える</label><input class="input" type="file" name="imageFile" accept="image/*"></div>
+          <div><label class="field-label">記録日時</label><input class="input" type="datetime-local" name="createdAt" value="${toDateTimeLocal(item.createdAt)}"></div>
+          ${mediaImage ? `<div class="full"><img class="edit-image-preview" src="${escapeHtml(mediaImage)}" alt="現在の添付画像"><label class="flex items-center gap-2 mt-2 text-sm font-black"><input type="checkbox" name="removeImage" value="1" class="w-5 h-5"> 現在の写真を削除する</label></div>` : ''}
+        </div></div>
+      </details>`;
     const form = document.getElementById('entryEditForm');
     form.onsubmit = saveEditedEntry;
     document.querySelectorAll('[data-count-field]').forEach(area => area.addEventListener('input', () => {
