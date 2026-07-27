@@ -299,6 +299,29 @@
         .frame-icon svg { width: 27px; height: 27px; }
         .frame-count { font-size: 2.05rem; }
       }
+
+      .edit-modal-backdrop { position:fixed; inset:0; z-index:120; background:rgba(15,23,42,.68); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; padding:1rem; }
+      .edit-modal-backdrop.hidden { display:none; }
+      .edit-modal-panel { width:min(980px,100%); max-height:94vh; overflow:hidden; background:#fff; border:2px solid #94a3b8; border-radius:1.5rem; box-shadow:0 28px 80px rgba(15,23,42,.35); display:flex; flex-direction:column; }
+      .edit-modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding:1rem 1.2rem; border-bottom:2px solid #e2e8f0; background:linear-gradient(135deg,#eff6ff,#f8fafc); }
+      .edit-modal-body { overflow:auto; padding:1rem 1.2rem 1.25rem; }
+      .edit-modal-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+      .edit-modal-grid .full { grid-column:1/-1; }
+      .edit-modal-body .textarea { min-height:150px; }
+      .edit-modal-body .textarea.long { min-height:260px; }
+      .edit-modal-foot { display:flex; gap:.75rem; justify-content:flex-end; padding:1rem 1.2rem; border-top:2px solid #e2e8f0; background:#f8fafc; }
+      .edit-char-count { margin-top:.35rem; text-align:right; font-size:.75rem; font-weight:900; color:#64748b; }
+      .edit-image-preview { max-width:220px; max-height:160px; object-fit:cover; border-radius:1rem; border:2px solid #cbd5e1; }
+      body.modal-open { overflow:hidden; }
+      @media (max-width: 700px) {
+        .edit-modal-backdrop { padding:0; align-items:stretch; }
+        .edit-modal-panel { max-height:none; height:100dvh; border-radius:0; border-width:0; }
+        .edit-modal-grid { grid-template-columns:1fr; }
+        .edit-modal-grid .full { grid-column:auto; }
+        .edit-modal-head, .edit-modal-body, .edit-modal-foot { padding-left:.9rem; padding-right:.9rem; }
+        .edit-modal-foot { position:sticky; bottom:0; }
+        .edit-modal-foot .btn-soft, .edit-modal-foot .btn-primary { flex:1; }
+      }
     `;
     document.head.appendChild(style);
   }
@@ -1272,21 +1295,140 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     });
   }
 
+  const editSchemas = {
+    current: [
+      ['select','category','カテゴリ', catalogs.current], ['text','title','タイトル'], ['textarea','body','現在の状況','long'], ['textarea','concern','気になる点'],
+    ],
+    mind: [
+      ['select','category','カテゴリ', catalogs.mind], ['text','title','タイトル'], ['textarea','body','考えていること・気持ち','long'], ['number','intensity','感情の強さ（1〜10）'],
+    ],
+    insights: [
+      ['select','category','カテゴリ', catalogs.insight], ['text','title','タイトル'], ['textarea','body','気づいたこと','long'], ['textarea','action','活かし方'],
+    ],
+    reflections: [
+      ['select','category','カテゴリ', catalogs.reflection], ['text','title','タイトル'], ['textarea','body','何が起きたか','long'], ['textarea','cause','原因・背景'], ['textarea','lesson','学び'], ['textarea','nextAction','次に変える行動'],
+    ],
+    premises: [
+      ['select','kind','前提の種類',['制限する前提','力になる前提','確認したい前提','置き換え前提']], ['select','category','領域', catalogs.premise], ['textarea','before','今の前提','long'], ['textarea','after','置き換えたい前提・別の見方'], ['textarea','decision','この前提で選ぶ行動'],
+    ],
+    future: [
+      ['select','category','カテゴリ', catalogs.future], ['text','title','タイトル'], ['textarea','body','手にしたい未来','long'], ['textarea','reason','なぜ欲しいのか'], ['textarea','firstStep','最初の一歩'], ['select','priority','優先度',['高','中','低']], ['select','status','状態',['未着手','準備中','進行中','達成','保留']],
+    ],
+    goals: [
+      ['select','category','カテゴリ', catalogs.goal], ['text','title','タイトル'], ['textarea','body','目標・目的','long'], ['textarea','why','なぜそれが大切か'], ['text','deadline','期限・目安'], ['textarea','success','達成の基準'], ['select','priority','優先度',['高','中','低']],
+    ],
+    imports: [
+      ['select','category','カテゴリ', catalogs.history], ['text','title','タイトル'], ['text','period','時期・期間'], ['textarea','body','履歴・メモ本文','long'],
+    ]
+  };
+
+  function editFieldHtml(field, item) {
+    const [type, name, label, optionsOrClass] = field;
+    const value = item[name] ?? '';
+    if (type === 'select') return `<div><label class="field-label">${escapeHtml(label)}</label>${selectHtml(name, optionsOrClass || [], value)}</div>`;
+    if (type === 'textarea') {
+      const extra = optionsOrClass === 'long' ? ' long' : '';
+      return `<div class="${extra ? 'full' : ''}"><label class="field-label">${escapeHtml(label)}</label><textarea class="textarea${extra}" name="${name}" data-count-field="${name}">${escapeHtml(value)}</textarea><div class="edit-char-count" data-count-for="${name}">${String(value).length}文字</div></div>`;
+    }
+    const attrs = type === 'number' ? ' min="1" max="10" step="1"' : '';
+    return `<div><label class="field-label">${escapeHtml(label)}</label><input class="input" type="${type}" name="${name}" value="${escapeHtml(value)}"${attrs}></div>`;
+  }
+
+  function ensureEditModal() {
+    let modal = document.getElementById('entryEditModal');
+    if (modal) return modal;
+    modal = document.createElement('div');
+    modal.id = 'entryEditModal';
+    modal.className = 'edit-modal-backdrop hidden';
+    modal.innerHTML = `<section class="edit-modal-panel" role="dialog" aria-modal="true" aria-labelledby="entryEditTitle">
+      <div class="edit-modal-head"><div><p class="text-xs font-black text-blue-700">完全編集モード</p><h2 id="entryEditTitle" class="text-xl font-black mt-1">記録を編集</h2><p class="text-xs font-bold text-slate-600 mt-1">本文だけでなく、カテゴリ・タイトル・補足・タグ・URL・日時まで修正できます。</p></div><button type="button" class="btn-icon" data-edit-close aria-label="閉じる"><i data-lucide="x"></i></button></div>
+      <form id="entryEditForm" class="contents"><div class="edit-modal-body"><div id="entryEditFields" class="edit-modal-grid"></div></div><div class="edit-modal-foot"><button type="button" class="btn-soft" data-edit-close>キャンセル</button><button type="submit" class="btn-primary btn-blue"><i data-lucide="save" class="w-5 h-5"></i>変更を保存</button></div></form>
+    </section>`;
+    document.body.appendChild(modal);
+    modal.querySelectorAll('[data-edit-close]').forEach(btn => btn.onclick = closeEditModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeEditModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeEditModal(); });
+    return modal;
+  }
+
+  function closeEditModal() {
+    const modal = document.getElementById('entryEditModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  }
+
   function editEntry(section, id) {
-    const item = state[section].find(x => x.id === id);
-    if (!item) return;
+    const item = state[section]?.find(x => x.id === id);
+    const schema = editSchemas[section];
+    if (!item || !schema) return;
     const labelMap = { current:'現在地', mind:'心の声', insights:'気づき', reflections:'反省', premises:'前提', future:'未来', goals:'目標', imports:'履歴' };
-    const text = prompt(`${labelMap[section]}の本文を編集します。必要な部分だけ修正してください。`, item.body || item.before || item.title || '');
-    if (text === null) return;
+    const modal = ensureEditModal();
+    modal.dataset.section = section;
+    modal.dataset.id = id;
+    document.getElementById('entryEditTitle').textContent = `${labelMap[section]}を完全編集`;
+    const mediaImage = item.imageData || item.imageUrl || '';
+    document.getElementById('entryEditFields').innerHTML = schema.map(f => editFieldHtml(f, item)).join('') + `
+      <div class="full rounded-2xl bg-slate-50 border-2 border-slate-200 p-4"><p class="text-sm font-black text-slate-800 mb-3">添付・管理情報</p><div class="edit-modal-grid">
+        <div><label class="field-label">参考URL</label><input class="input" type="url" name="linkUrl" value="${escapeHtml(item.linkUrl || '')}" placeholder="https://..."></div>
+        <div><label class="field-label">写真URL</label><input class="input" type="url" name="imageUrl" value="${escapeHtml(item.imageUrl || '')}" placeholder="https://..."></div>
+        <div class="full"><label class="field-label">タグ（カンマ区切り）</label><input class="input" type="text" name="tags" value="${escapeHtml(item.tags || '')}"></div>
+        <div><label class="field-label">写真を差し替える</label><input class="input" type="file" name="imageFile" accept="image/*"></div>
+        <div><label class="field-label">記録日時</label><input class="input" type="datetime-local" name="createdAt" value="${toDateTimeLocal(item.createdAt)}"></div>
+        ${mediaImage ? `<div class="full"><img class="edit-image-preview" src="${escapeHtml(mediaImage)}" alt="現在の添付画像"><label class="flex items-center gap-2 mt-2 text-sm font-black"><input type="checkbox" name="removeImage" value="1" class="w-5 h-5"> 現在の写真を削除する</label></div>` : ''}
+      </div></div>`;
+    const form = document.getElementById('entryEditForm');
+    form.onsubmit = saveEditedEntry;
+    document.querySelectorAll('[data-count-field]').forEach(area => area.addEventListener('input', () => {
+      const out = document.querySelector(`[data-count-for="${area.dataset.countField}"]`);
+      if (out) out.textContent = `${area.value.length}文字`;
+    }));
+    modal.classList.remove('hidden');
+    document.body.classList.add('modal-open');
+    refreshIcons();
+    setTimeout(() => modal.querySelector('input,textarea,select')?.focus(), 50);
+  }
+
+  function toDateTimeLocal(value) {
+    const d = new Date(value || Date.now());
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  async function saveEditedEntry(e) {
+    e.preventDefault();
+    const modal = document.getElementById('entryEditModal');
+    const section = modal.dataset.section;
+    const id = modal.dataset.id;
+    const original = state[section]?.find(x => x.id === id);
+    if (!original) return closeEditModal();
+    const form = e.currentTarget;
+    const d = formData(form);
+    const file = form.querySelector('input[name="imageFile"]')?.files?.[0];
+    let newImageData = original.imageData || '';
+    let newImageName = original.imageName || '';
+    if (d.removeImage === '1') { newImageData = ''; newImageName = ''; d.imageUrl = ''; }
+    if (file) {
+      try { newImageData = await compressImageFile(file, 900, .72); newImageName = file.name; }
+      catch { return showToast('写真の読み込みに失敗しました', 'error'); }
+    }
+    const next = { ...original };
+    (editSchemas[section] || []).forEach(([,name]) => { next[name] = String(d[name] ?? '').trim(); });
+    next.linkUrl = String(d.linkUrl || '').trim();
+    next.imageUrl = String(d.imageUrl || '').trim();
+    next.tags = String(d.tags || '').trim();
+    next.imageData = newImageData;
+    next.imageName = newImageName;
+    if (d.createdAt) next.createdAt = new Date(d.createdAt).toISOString();
+    next.updatedAt = nowIso();
     if (updateState(s => {
-      const target = s[section].find(x => x.id === id);
-      if (!target) return;
-      if (section === 'premises') target.before = text.trim();
-      else target.body = text.trim();
-      target.updatedAt = nowIso();
-    }, '更新しました')) {
-      const updated = state[section].find(x => x.id === id);
-      autoSendToSpreadsheet('edit', section, updated);
+      const index = s[section].findIndex(x => x.id === id);
+      if (index >= 0) s[section][index] = next;
+    }, 'すべての変更を保存しました')) {
+      closeEditModal();
+      autoSendToSpreadsheet('edit', section, next);
+      if (section === 'imports') renderImport();
     }
   }
 
@@ -1782,7 +1924,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
             <div class="mt-6 rounded-2xl bg-slate-50 border-2 border-slate-200 p-4 text-sm font-bold text-slate-700 leading-relaxed">
               <p class="font-black text-slate-900 mb-2">安全運用の目安</p>
               <p>・大きな編集前はJSONバックアップ</p>
-              <p>・v4.3.4では、通常の完全同期に加えて「件数ずれ修復」と「クラウド正本で取り込み」を追加しています。PCとスマホの数字が違う時は、両端末で件数ずれ修復を1回ずつ実行してください。</p>
+              <p>・v4.3.5では、通常の完全同期に加えて「件数ずれ修復」と「クラウド正本で取り込み」を追加しています。PCとスマホの数字が違う時は、両端末で件数ずれ修復を1回ずつ実行してください。</p>
               <p>・GAS連携を設定すると、入力データをGoogleスプレッドシートにも保存できます。</p>
             </div>
           </div>
