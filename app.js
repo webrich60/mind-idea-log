@@ -1,10 +1,11 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_5_0-20260727';
+  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_5_1-20260727';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
+  const PROFILE_SAFETY_KEY = 'life_compass_profile_safety_latest';
   const LEGACY_KEYS = ['life_compass_v2', 'mind_logs', 'mind_apps', 'mind_treasures', 'mind_goals', 'mind_settings', 'mind_import_urls'];
 
   const nowIso = () => new Date().toISOString();
@@ -376,13 +377,66 @@
     }
   }
 
+  function profileDataScore(profile = {}) {
+    const keys = ['name','age','familyStructure','medicalHistory','likedThings','strongThings','workHistory','traumaHistory','values','personalityTraits','lifeTimeline','currentConstraints','supportNeeded','memo'];
+    return keys.reduce((score, key) => score + (String(profile?.[key] || '').trim() ? 1 : 0), 0);
+  }
+
+  function extractProfileCandidate(value) {
+    if (!value || typeof value !== 'object') return null;
+    if (value.data && typeof value.data === 'object' && value.data.profile) return value.data.profile;
+    if (value.profile && typeof value.profile === 'object') return value.profile;
+    return null;
+  }
+
+  function recoverBestLocalProfile(currentProfile = {}) {
+    const candidates = [{ profile: currentProfile, source: 'current' }];
+    try {
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (!key || (!key.includes('life_compass') && !key.includes('corrupted_'))) continue;
+        const parsed = safeParse(localStorage.getItem(key), null, key);
+        const profile = extractProfileCandidate(parsed);
+        if (profile) candidates.push({ profile, source: key });
+      }
+    } catch (e) {
+      console.warn('プロフィール退避データの探索に失敗しました', e);
+    }
+    candidates.sort((a, b) => {
+      const scoreDiff = profileDataScore(b.profile) - profileDataScore(a.profile);
+      if (scoreDiff) return scoreDiff;
+      return dateValue(b.profile?.profileUpdatedAt || b.profile?.updatedAt) - dateValue(a.profile?.profileUpdatedAt || a.profile?.updatedAt);
+    });
+    return candidates[0]?.profile || currentProfile;
+  }
+
+  function saveProfileSafety(profile = state?.profile) {
+    if (!profile || profileDataScore(profile) === 0) return;
+    try {
+      localStorage.setItem(PROFILE_SAFETY_KEY, JSON.stringify({ savedAt: nowIso(), profile }));
+    } catch (e) {
+      console.warn('プロフィール安全バックアップの保存に失敗しました', e);
+    }
+  }
+
   function loadState() {
     const base = safeParse(localStorage.getItem(STORAGE_KEY), null, STORAGE_KEY);
-    if (base && typeof base === 'object') return normalizeState(base);
+    if (base && typeof base === 'object') {
+      const normalized = normalizeState(base);
+      const recovered = recoverBestLocalProfile(normalized.profile);
+      if (profileDataScore(recovered) > profileDataScore(normalized.profile)) {
+        normalized.profile = { ...normalized.profile, ...recovered };
+        persistState(normalized, { silent: true });
+      }
+      saveProfileSafety(normalized.profile);
+      return normalized;
+    }
 
     const fresh = emptyData();
     migrateLegacy(fresh);
+    fresh.profile = { ...fresh.profile, ...recoverBestLocalProfile(fresh.profile) };
     persistState(fresh, { silent: true });
+    saveProfileSafety(fresh.profile);
     return fresh;
   }
 
@@ -430,6 +484,9 @@
     try {
       localStorage.setItem(STORAGE_KEY, text);
       localStorage.setItem(BACKUP_KEY, JSON.stringify({ savedAt: nowIso(), data: next }));
+      if (next?.profile && profileDataScore(next.profile) > 0) {
+        localStorage.setItem(PROFILE_SAFETY_KEY, JSON.stringify({ savedAt: nowIso(), profile: next.profile }));
+      }
       return true;
     } catch (e) {
       if (e && (e.name === 'QuotaExceededError' || String(e).includes('quota'))) {
@@ -566,6 +623,21 @@
     return Array.from(map.values()).sort((a,b) => dateValue(b.updatedAt || b.createdAt) - dateValue(a.updatedAt || a.createdAt));
   }
 
+  function mergeProfileSafely(localProfile = {}, remoteProfile = {}) {
+    const localScore = profileDataScore(localProfile);
+    const remoteScore = profileDataScore(remoteProfile);
+    const localTime = dateValue(localProfile.profileUpdatedAt || localProfile.updatedAt);
+    const remoteTime = dateValue(remoteProfile.profileUpdatedAt || remoteProfile.updatedAt);
+
+    // 空のクラウドプロフィールで、端末に保存済みのプロフィールを消さない。
+    if (remoteScore === 0 && localScore > 0) return { ...remoteProfile, ...localProfile };
+    if (localScore === 0 && remoteScore > 0) return { ...localProfile, ...remoteProfile };
+
+    // 両方に内容がある場合のみ、更新日時が新しい方を優先する。
+    if (remoteScore > 0 && remoteTime > localTime) return { ...localProfile, ...remoteProfile };
+    return { ...remoteProfile, ...localProfile };
+  }
+
   function mergeRemoteState(remoteState = {}, deletions = {}) {
     const remote = normalizeState(remoteState || {});
     const keepSettings = {
@@ -577,11 +649,9 @@
       notebookDocUpdatedAt: state.profile.notebookDocUpdatedAt || remote.profile.notebookDocUpdatedAt || ''
     };
 
-    const localProfileTime = dateValue(state.profile.profileUpdatedAt || state.updatedAt);
-    const remoteProfileTime = dateValue(remote.profile.profileUpdatedAt || remote.updatedAt);
-    const profile = remoteProfileTime > localProfileTime ? { ...state.profile, ...remote.profile } : { ...remote.profile, ...state.profile };
+    const profile = mergeProfileSafely(state.profile || {}, remote.profile || {});
 
-    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.34 };
+    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.5 };
     syncSections.forEach(section => {
       merged[section] = mergeEntryArrays(state[section] || [], remote[section] || [], section, deletions);
     });
@@ -640,7 +710,8 @@
       notebookDocUrl: state.profile.notebookDocUrl || remote.profile.notebookDocUrl || '',
       notebookDocUpdatedAt: state.profile.notebookDocUpdatedAt || remote.profile.notebookDocUpdatedAt || ''
     };
-    const next = { ...remote, profile: { ...(remote.profile || {}), ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.34 };
+    const safeProfile = mergeProfileSafely(state.profile || {}, remote.profile || {});
+    const next = { ...remote, profile: { ...safeProfile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.5 };
     dedupeLocalState(next);
     return normalizeState(next);
   }
@@ -2201,6 +2272,19 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     showToast('リセットしました。直前バックアップはlocalStorage内に退避しています。', 'warn');
   }
 
+  function restoreProtectedProfile() {
+    const recovered = recoverBestLocalProfile(state.profile || {});
+    if (profileDataScore(recovered) === 0) {
+      showToast('この端末内には復元できるプロフィールが見つかりませんでした。GAS同期からの取得を試してください。', 'warn');
+      return false;
+    }
+    updateState(s => {
+      s.profile = { ...s.profile, ...recovered, profileUpdatedAt: recovered.profileUpdatedAt || nowIso() };
+    }, '保護バックアップからプロフィールを復元しました');
+    autoSendToSpreadsheet('create', 'profile', buildProfileRecord());
+    return true;
+  }
+
   function renderAll() {
     injectEnhancedUiStyles();
     mountTabs();
@@ -2223,7 +2307,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     document.getElementById('quickSaveBtn').onclick = () => showToast(`最終保存：${new Date(state.updatedAt).toLocaleString('ja-JP')} / GAS：${isGasSyncEnabled() ? 'ON' : 'OFF'} / 同期：${isPullSyncEnabled() ? 'ON' : 'OFF'}`, 'success');
   }
 
-  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, pullFromSpreadsheet, twoWaySync, repairDeviceMismatch, pullCloudAsSourceOfTruth, checkCloudCounts, renderMindMap, renderLifeComparison, runLifeComparisonAnalysis, openNotebookDocGenerator, state: () => state };
+  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, pullFromSpreadsheet, twoWaySync, repairDeviceMismatch, pullCloudAsSourceOfTruth, checkCloudCounts, restoreProtectedProfile, renderMindMap, renderLifeComparison, runLifeComparisonAnalysis, openNotebookDocGenerator, state: () => state };
 
   document.addEventListener('DOMContentLoaded', () => {
     injectEnhancedUiStyles();
