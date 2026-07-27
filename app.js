@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'sync-v4_3_4-20260726';
+  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_5_0-20260727';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -19,7 +19,7 @@
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
   const emptyData = () => ({
-    version: 4.34,
+    version: 4.5,
     updatedAt: nowIso(),
     createdAt: nowIso(),
     profile: {
@@ -45,7 +45,20 @@
       lastSyncAt: '',
       notebookDocUrl: '',
       notebookDocUpdatedAt: '',
-      profileUpdatedAt: ''
+      profileUpdatedAt: '',
+      pastIdealLife: '',
+      pastIdealReason: '',
+      currentReality: '',
+      currentSatisfaction: '50',
+      newDesiredLife: '',
+      newIdealReason: '',
+      lifeGapHealth: '',
+      lifeGapWork: '',
+      lifeGapMoney: '',
+      lifeGapFamily: '',
+      lifeGapFreedom: '',
+      lifeComparisonAnalysis: '',
+      lifeComparisonUpdatedAt: ''
     },
     current: [],
     mind: [],
@@ -64,6 +77,7 @@
   const tabs = [
     { id:'home', label:'ホーム', icon:'home' },
     { id:'profile', label:'プロフィール', icon:'user-round-cog' },
+    { id:'comparison', label:'人生比較', icon:'split-square-horizontal' },
     { id:'current', label:'現在地', icon:'map-pin' },
     { id:'mind', label:'心の声', icon:'heart' },
     { id:'insights', label:'気づき', icon:'lightbulb' },
@@ -92,6 +106,7 @@
   // --- UIテーマ：各フレームの薄色背景・大きめアイコン・スマホ最適化 ---
   const frameThemes = {
     profile: { className: 'frame-theme-profile', label: 'プロフィール' },
+    comparison: { className: 'frame-theme-future', label: '人生比較' },
     current: { className: 'frame-theme-current', label: '現在地' },
     mind: { className: 'frame-theme-mind', label: '心の声' },
     insights: { className: 'frame-theme-insights', label: '気づき' },
@@ -379,7 +394,7 @@
     ['current','mind','insights','reflections','premises','future','goals','imports','aiHistory'].forEach(k => {
       merged[k] = Array.isArray(data[k]) ? data[k] : [];
     });
-    merged.version = 4.34;
+    merged.version = 4.5;
     return merged;
   }
 
@@ -867,6 +882,7 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     });
     mountTabs();
     if (id === 'profile') renderProfile();
+    if (id === 'comparison') renderLifeComparison();
     if (id === 'import') renderImport();
     if (id === 'map') renderMindMap();
     if (id === 'ai') renderAi();
@@ -1005,7 +1021,7 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     ['name', '名前・呼び名'], ['age', '年齢'], ['familyStructure', '家族構成'], ['medicalHistory', '既往歴・健康上の注意'],
     ['likedThings', '好きだったこと'], ['strongThings', '得意だったこと'], ['workHistory', '仕事歴・実績'], ['traumaHistory', '自分にとってのトラウマ'],
     ['values', '大切にしたい価値観'], ['personalityTraits', '性格・考え方の傾向'], ['lifeTimeline', '人生年表・大きな出来事'],
-    ['currentConstraints', '今の制約・配慮してほしいこと'], ['supportNeeded', 'AIにしてほしい支援'], ['memo', '自由メモ']
+    ['currentConstraints', '今の制約・配慮してほしいこと'], ['supportNeeded', 'AIにしてほしい支援'], ['memo', '自由メモ'], ['pastIdealLife', '昔理想としていた人生'], ['pastIdealReason', '当時その人生を望んだ理由'], ['currentReality', '現在の現実'], ['newDesiredLife', 'これから手にしたい人生'], ['newIdealReason', '今その人生を望む理由'], ['lifeGapHealth', '健康の理想と現実'], ['lifeGapWork', '仕事の理想と現実'], ['lifeGapMoney', 'お金の理想と現実'], ['lifeGapFamily', '家族・人間関係の理想と現実'], ['lifeGapFreedom', '自由・暮らしの理想と現実']
   ];
 
   function hasProfileData(profile = state.profile) {
@@ -1034,6 +1050,140 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
       createdAt: state.createdAt || nowIso(),
       updatedAt: state.profile.profileUpdatedAt || state.updatedAt || nowIso()
     };
+  }
+
+
+
+  function lifeComparisonSummary(profile = state.profile) {
+    const p = profile || {};
+    const parts = [
+      p.pastIdealLife ? `【昔理想としていた人生】\n${p.pastIdealLife}` : '',
+      p.pastIdealReason ? `【当時そう望んだ理由】\n${p.pastIdealReason}` : '',
+      p.currentReality ? `【現在の現実】\n${p.currentReality}` : '',
+      p.currentSatisfaction ? `【現在の満足度】\n${p.currentSatisfaction}/100` : '',
+      p.newDesiredLife ? `【これから手にしたい人生】\n${p.newDesiredLife}` : '',
+      p.newIdealReason ? `【今そう望む理由】\n${p.newIdealReason}` : '',
+      p.lifeGapHealth ? `【健康】\n${p.lifeGapHealth}` : '',
+      p.lifeGapWork ? `【仕事・役割】\n${p.lifeGapWork}` : '',
+      p.lifeGapMoney ? `【お金】\n${p.lifeGapMoney}` : '',
+      p.lifeGapFamily ? `【家族・人間関係】\n${p.lifeGapFamily}` : '',
+      p.lifeGapFreedom ? `【自由・暮らし】\n${p.lifeGapFreedom}` : ''
+    ].filter(Boolean);
+    return parts.join('\n\n') || '人生比較は未入力です。';
+  }
+
+  function renderLifeComparison() {
+    const root = document.getElementById('view-comparison');
+    if (!root) return;
+    const p = state.profile || {};
+    const analysis = p.lifeComparisonAnalysis || 'まだAI分析はありません。3つの人生を書き出してから「AIで比較分析」を押してください。';
+    root.innerHTML = `
+      <div class="space-y-6">
+        <div class="panel border-indigo-600">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title text-indigo-800"><i data-lucide="split-square-horizontal"></i> 3つの人生を比較する</h2>
+              <p class="text-sm font-bold text-slate-600 mt-2">昔の理想、現在の現実、新しく手にしたい人生を並べることで、価値観の変化と本当の課題を見つけます。</p>
+            </div>
+          </div>
+          <form id="lifeComparisonForm" class="space-y-5 mt-5">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+              <div class="rounded-3xl border-2 border-amber-300 bg-amber-50 p-4">
+                <h3 class="font-black text-amber-900 flex items-center gap-2"><i data-lucide="history" class="w-5 h-5"></i> 昔、理想としていた人生</h3>
+                <p class="text-xs font-bold text-amber-800 mt-1 mb-3">子どもの頃、若い頃、会社員時代など、その当時の理想を書きます。</p>
+                ${textareaHtml('昔の理想', 'pastIdealLife', '例：安定した会社で定年まで働き、家族を守る人生', p.pastIdealLife || '')}
+                <div class="mt-3">${textareaHtml('なぜ、それを理想だと思っていたか', 'pastIdealReason', '周囲の価値観、安心、憧れ、家族の期待など', p.pastIdealReason || '')}</div>
+              </div>
+              <div class="rounded-3xl border-2 border-sky-300 bg-sky-50 p-4">
+                <h3 class="font-black text-sky-900 flex items-center gap-2"><i data-lucide="map-pin" class="w-5 h-5"></i> 今の現実</h3>
+                <p class="text-xs font-bold text-sky-800 mt-1 mb-3">良い面も厳しい面も、評価せず事実として書きます。</p>
+                ${textareaHtml('現在の生活・仕事・健康・お金・人間関係', 'currentReality', '例：療養中。AIツール開発に挑戦中。時間の自由はあるが収入は未確立', p.currentReality || '')}
+                <div class="mt-3"><label class="field-label">現在の人生への満足度：<span id="lifeSatisfactionValue">${escapeHtml(p.currentSatisfaction || '50')}</span>/100</label><input id="lifeSatisfaction" name="currentSatisfaction" type="range" min="0" max="100" step="5" value="${escapeHtml(p.currentSatisfaction || '50')}" class="w-full accent-blue-600"></div>
+              </div>
+              <div class="rounded-3xl border-2 border-emerald-300 bg-emerald-50 p-4">
+                <h3 class="font-black text-emerald-900 flex items-center gap-2"><i data-lucide="sparkles" class="w-5 h-5"></i> これから手にしたい人生</h3>
+                <p class="text-xs font-bold text-emerald-800 mt-1 mb-3">昔の理想に縛られず、今の自分が本当に望む人生を書きます。</p>
+                ${textareaHtml('新しい理想の人生', 'newDesiredLife', '例：体調を守りながら、場所と時間に縛られずAI事業で収入を得る', p.newDesiredLife || '')}
+                <div class="mt-3">${textareaHtml('なぜ、今はそれを望むのか', 'newIdealReason', '経験、病気、家族、価値観の変化など', p.newIdealReason || '')}</div>
+              </div>
+            </div>
+
+            <details class="rounded-3xl border-2 border-slate-300 bg-white p-4" open>
+              <summary class="cursor-pointer font-black text-slate-800 flex items-center gap-2"><i data-lucide="scan-search" class="w-5 h-5"></i> 分野別に理想と現実を書く</summary>
+              <p class="text-sm font-bold text-slate-600 mt-2">各欄には「理想／現実／妨げていること」をまとめて書いてください。</p>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                ${textareaHtml('健康', 'lifeGapHealth', '理想：旅行できる体力／現実：腰や目に制約／妨げ：...', p.lifeGapHealth || '')}
+                ${textareaHtml('仕事・役割', 'lifeGapWork', '理想：...／現実：...／妨げ：...', p.lifeGapWork || '')}
+                ${textareaHtml('お金', 'lifeGapMoney', '理想：...／現実：...／妨げ：...', p.lifeGapMoney || '')}
+                ${textareaHtml('家族・人間関係', 'lifeGapFamily', '理想：...／現実：...／妨げ：...', p.lifeGapFamily || '')}
+                ${textareaHtml('自由・暮らし', 'lifeGapFreedom', '理想：...／現実：...／妨げ：...', p.lifeGapFreedom || '')}
+              </div>
+            </details>
+
+            <div class="sticky-actions rounded-2xl border-2 border-slate-300 bg-white/95 backdrop-blur p-3 shadow-xl flex flex-col sm:flex-row gap-3">
+              <button class="btn-primary btn-blue flex-1" type="submit"><i data-lucide="save" class="w-5 h-5"></i> 人生比較を保存</button>
+              <button id="lifeCompareAiBtn" class="btn-primary flex-1" type="button"><i data-lucide="brain-circuit" class="w-5 h-5"></i> AIで比較分析</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel border-violet-600">
+          <div class="panel-head"><h2 class="panel-title text-violet-800"><i data-lucide="brain-circuit"></i> AIによる人生ギャップ分析</h2><span class="count-pill">プロフィール・記録も参照</span></div>
+          <div id="lifeComparisonAnalysis" class="prose-box rounded-2xl bg-violet-50 border-2 border-violet-200 p-4 md:p-6 font-bold text-slate-700 whitespace-pre-wrap leading-relaxed">${escapeHtml(analysis)}</div>
+        </div>
+      </div>`;
+
+    const form = document.getElementById('lifeComparisonForm');
+    const range = document.getElementById('lifeSatisfaction');
+    const rangeValue = document.getElementById('lifeSatisfactionValue');
+    range?.addEventListener('input', () => { rangeValue.textContent = range.value; });
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const d = formData(form);
+      if (updateState(st => {
+        Object.assign(st.profile, d);
+        st.profile.lifeComparisonUpdatedAt = nowIso();
+        st.profile.profileUpdatedAt = nowIso();
+      }, '人生比較を保存しました')) {
+        autoSendToSpreadsheet('create', 'profile', buildProfileRecord());
+      }
+    };
+    document.getElementById('lifeCompareAiBtn').onclick = runLifeComparisonAnalysis;
+    refreshIcons();
+  }
+
+  async function runLifeComparisonAnalysis() {
+    const p = state.profile || {};
+    if (!String(p.pastIdealLife || '').trim() || !String(p.currentReality || '').trim() || !String(p.newDesiredLife || '').trim()) {
+      showToast('「昔の理想」「今の現実」「新しい理想」の3つを入力して保存してください。', 'warn');
+      return;
+    }
+    if (!getGasUrl()) {
+      showToast('AI分析にはGAS WebアプリURLの設定が必要です。', 'warn');
+      return;
+    }
+    const out = document.getElementById('lifeComparisonAnalysis');
+    if (out) out.textContent = 'AIが3つの人生とプロフィール・記録を比較しています。少しお待ちください。';
+    const provider = state.profile.aiProvider || 'gemini';
+    const mode = '昔の理想・現在・新しい理想の人生比較分析';
+    const question = '昔理想としていた人生、現在の現実、新しく望む人生を比較し、最大の問題と優先順位を分析してください。';
+    const prompt = `あなたは現実的で誠実なAI人生コーチです。以下の3つの人生と、保存済みプロフィール・現在地・心の声・目標を比較してください。\n\n${lifeComparisonSummary()}\n\n${buildDataBundle()}\n\n【回答形式】\n1. 昔の理想から変化した価値観\n2. 現在と新しい理想の最大ギャップ\n3. 表面上の問題と根本問題を分ける\n4. 健康・仕事・お金・家族・自由の5分野評価（各100点）\n5. 今もっとも大きな問題を1つ\n6. 優先順位トップ3\n7. 90日で行う現実的な行動\n8. 手放した方がよい昔の前提\n9. 守るべき強み・人生資産\n10. 厳しさと温かさのある短い総括\n\n断定しすぎず、医療・法律・投資は専門家確認を促してください。`;
+    try {
+      const data = await requestAiCoachFromGas({ provider, mode, question, prompt });
+      const answer = data.answer || '分析結果を取得できませんでした。';
+      updateState(st => {
+        st.profile.lifeComparisonAnalysis = answer;
+        st.profile.lifeComparisonUpdatedAt = nowIso();
+        st.profile.profileUpdatedAt = nowIso();
+        st.aiHistory.unshift({ id:uid(), provider:data.provider || provider, model:data.model || '', mode, question, answer, createdAt:nowIso(), updatedAt:nowIso() });
+      }, '人生比較のAI分析を保存しました');
+      autoSendToSpreadsheet('create', 'profile', buildProfileRecord());
+      switchTab('comparison');
+    } catch (e) {
+      console.error(e);
+      if (out) out.textContent = 'AI分析に失敗しました。GAS URL、デプロイ、APIキーを確認してください。';
+      showToast('人生比較のAI分析に失敗しました', 'error');
+    }
   }
 
   function renderProfile() {
@@ -1747,6 +1897,7 @@ ${bundle}
     const pick = (arr, fields) => arr.slice(0, 25).map((x, i) => `${i+1}. ` + fields.map(f => x[f] ? `${f}:${x[f]}` : '').filter(Boolean).join(' / ')).join('\n') || 'なし';
     return [
       `■プロフィール\n${profileSummary()}`,
+      `■人生比較（昔の理想・現在・新しい理想）\n${lifeComparisonSummary()}`,
       `■現在地\n${pick(state.current, ['category','title','body','concern'])}`,
       `■心の声\n${pick(state.mind, ['category','title','body','intensity'])}`,
       `■気づき\n${pick(state.insights, ['category','title','body','action'])}`,
@@ -2058,6 +2209,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     bindForms();
     renderLists();
     if (activeTab === 'profile') renderProfile();
+    if (activeTab === 'comparison') renderLifeComparison();
     if (activeTab === 'import') renderImport();
     if (activeTab === 'map') renderMindMap();
     if (activeTab === 'ai') renderAi();
@@ -2071,7 +2223,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     document.getElementById('quickSaveBtn').onclick = () => showToast(`最終保存：${new Date(state.updatedAt).toLocaleString('ja-JP')} / GAS：${isGasSyncEnabled() ? 'ON' : 'OFF'} / 同期：${isPullSyncEnabled() ? 'ON' : 'OFF'}`, 'success');
   }
 
-  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, pullFromSpreadsheet, twoWaySync, repairDeviceMismatch, pullCloudAsSourceOfTruth, checkCloudCounts, renderMindMap, openNotebookDocGenerator, state: () => state };
+  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, pullFromSpreadsheet, twoWaySync, repairDeviceMismatch, pullCloudAsSourceOfTruth, checkCloudCounts, renderMindMap, renderLifeComparison, runLifeComparisonAnalysis, openNotebookDocGenerator, state: () => state };
 
   document.addEventListener('DOMContentLoaded', () => {
     injectEnhancedUiStyles();
