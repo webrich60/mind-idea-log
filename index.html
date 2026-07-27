@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>Life Compass Coach｜人生統合AIコーチ v4.5.1</title>
+  <title>Life Compass Coach｜人生統合AIコーチ v4.5.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
@@ -53,6 +53,85 @@
     .prose-box p, .prose-box li { line-height: 1.85; font-weight: 700; color:#334155; }
     .prose-box ul { padding-left: 1.2rem; list-style: disc; }
     .sticky-actions { position: sticky; bottom: .75rem; z-index: 25; }
+
+    /* v4.5.2: スマホだけ上部ヘッダーをコンパクト化。PC表示は変更しない。 */
+    @media (max-width: 767px) {
+      header > div:first-child {
+        padding: .65rem .75rem .55rem;
+        gap: .55rem;
+      }
+      header > div:first-child > div:first-child {
+        gap: .6rem;
+        align-items: flex-start;
+      }
+      header > div:first-child > div:first-child > div:first-child {
+        width: 2.35rem;
+        height: 2.35rem;
+        border-radius: .85rem;
+        border-width: 1.5px;
+        margin-top: .05rem;
+      }
+      header > div:first-child > div:first-child > div:first-child svg {
+        width: 1.45rem;
+        height: 1.45rem;
+      }
+      header h1 {
+        font-size: 1.12rem !important;
+        line-height: 1.2;
+      }
+      header h1 + p {
+        font-size: .68rem !important;
+        line-height: 1.42;
+        margin-top: .15rem;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+      }
+      header > div:first-child > div:last-child {
+        display: grid;
+        grid-template-columns: .92fr 1.22fr .92fr;
+        gap: .42rem;
+        width: 100%;
+      }
+      header #quickSaveBtn,
+      header #quickBackupBtn,
+      header #quickAiBtn {
+        min-width: 0;
+        width: 100%;
+        padding: .52rem .32rem;
+        border-radius: .72rem;
+        border-bottom-width: 3px;
+        font-size: .72rem !important;
+        line-height: 1;
+        white-space: nowrap;
+        gap: .25rem;
+      }
+      header #quickSaveBtn svg,
+      header #quickBackupBtn svg,
+      header #quickAiBtn svg {
+        width: .92rem;
+        height: .92rem;
+        flex: 0 0 auto;
+      }
+      #tabs {
+        padding-left: .35rem;
+        padding-right: .35rem;
+        gap: 0;
+      }
+      #tabs .tab-btn {
+        padding: .62rem .72rem !important;
+        font-size: .78rem !important;
+        border-bottom-width: 3px;
+      }
+      #tabs .tab-btn svg {
+        width: 1rem;
+        height: 1rem;
+      }
+      main {
+        padding-top: .9rem !important;
+      }
+    }
   </style>
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900 selection:bg-blue-200">
@@ -138,6 +217,6 @@
     <section id="view-backup" class="view hidden space-y-6"></section>
   </main>
 
-  <script src="./app.js?v=sync-v4_3_4-20260726"></script>
+  <script src="./app.js?v=mobile-ui-v4_5_2-20260727"></script>
 </body>
 </html>
