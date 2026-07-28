@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_6_1-safe-cloud-merge-20260728';
+  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_6_3-profile-sync-hotfix-20260728';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -20,7 +20,7 @@
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
   const emptyData = () => ({
-    version: 4.62,
+    version: 4.63,
     updatedAt: nowIso(),
     createdAt: nowIso(),
     profile: {
@@ -723,7 +723,7 @@
 
     const profile = mergeProfileSafely(state.profile || {}, remote.profile || {});
 
-    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.62 };
+    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.63 };
     syncSections.forEach(section => {
       merged[section] = mergeEntryArrays(state[section] || [], remote[section] || [], section, deletions);
     });
@@ -784,7 +784,7 @@
       notebookDocUpdatedAt: state.profile.notebookDocUpdatedAt || remote.profile.notebookDocUpdatedAt || ''
     };
     const safeProfile = mergeProfileSafely(state.profile || {}, remote.profile || {});
-    const next = { ...remote, profile: { ...safeProfile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.62 };
+    const next = { ...remote, profile: { ...safeProfile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.63 };
     dedupeLocalState(next);
     return normalizeState(next);
   }
@@ -936,7 +936,7 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     const payload = {
       action: 'stateSnapshot',
       app: 'Life Compass Coach',
-      appVersion: 4.62,
+      appVersion: 4.63,
       sentAt: nowIso(),
       syncToken: options.syncToken || '',
       section: 'system',
@@ -968,6 +968,10 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
       return false;
     }
     const payload = buildSheetPayload(action, section, record);
+    // v4.6.3: 保存確認用トークンを必ずPOST本文へ含める。
+    // v4.6.2では options.syncToken を作成しても payload に入れておらず、
+    // GAS側が保存完了を記録できないため、確認同期が成立していなかった。
+    if (options.syncToken) payload.syncToken = String(options.syncToken);
     try {
       await fetch(url, {
         method: 'POST',
@@ -1018,6 +1022,17 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
   async function syncAllToSpreadsheet(options = {}) {
     if (!getGasUrl()) {
       if (!options.silent) showToast('GAS WebアプリURLを先に設定してください', 'warn');
+      return false;
+    }
+    try {
+      const ping = await gasJsonp('ping', {}, 15000);
+      const msg = String(ping?.message || '');
+      if (!msg.includes('v4.6.3')) {
+        if (!options.silent) showToast('GASが旧バージョンです。Code.gsを更新し、新しいデプロイURLを保存してください。', 'error');
+        return false;
+      }
+    } catch (e) {
+      if (!options.silent) showToast('GAS接続確認に失敗しました。WebアプリURLと公開設定を確認してください。', 'error');
       return false;
     }
     dedupeLocalState(state);
