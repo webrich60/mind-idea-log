@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'life-compass-v4_6_4-tablet-stable-20260728';
+  const LIFE_COMPASS_UI_VERSION = 'v4_6_5-tablet-safe-boot-20260728';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -72,8 +72,16 @@
     aiHistory: []
   });
 
-  cleanupUnsentQueue();
-  let state = loadState();
+  let state;
+  let bootStorageWarning = '';
+  try {
+    cleanupUnsentQueue();
+    state = loadState();
+  } catch (bootError) {
+    console.error('初期データ読込エラー', bootError);
+    state = emptyData();
+    bootStorageWarning = 'この端末ではブラウザ保存領域を読み込めなかったため、一時データで起動しました。ブラウザのCookie・サイトデータ設定をご確認ください。';
+  }
   let activeTab = 'home';
 
   const tabs = [
@@ -2473,25 +2481,35 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
 
   window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, sendCloudSnapshot, pullFromSpreadsheet, twoWaySync, repairDeviceMismatch, pullCloudAsSourceOfTruth, checkCloudCounts, restoreProtectedProfile, renderMindMap, renderLifeComparison, runLifeComparisonAnalysis, openNotebookDocGenerator, state: () => state };
 
+  function showBootFailure(error) {
+    console.error('Life Compass 起動エラー', error);
+    const main = document.querySelector('main');
+    if (!main) return;
+    main.innerHTML = `
+      <section class="panel" style="margin:1rem;border-color:#dc2626;background:#fff7f7">
+        <h2 class="panel-title" style="color:#b91c1c">画面の起動に失敗しました</h2>
+        <p style="margin-top:.75rem;font-weight:800;line-height:1.7;color:#334155">データは削除していません。ページを再読み込みしてください。それでも直らない場合は、下の内容をスクリーンショットでお知らせください。</p>
+        <pre style="margin-top:1rem;padding:.8rem;white-space:pre-wrap;word-break:break-word;border-radius:.8rem;background:#0f172a;color:#fff;font-size:.78rem">${escapeHtml(error?.stack || error?.message || String(error))}</pre>
+      </section>`;
+  }
+
+  window.addEventListener('error', (event) => {
+    if (event?.error) console.error('window error', event.error);
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('unhandled rejection', event?.reason);
+  });
+
   document.addEventListener('DOMContentLoaded', () => {
-    const boot = document.getElementById('bootStatus');
     try {
       injectEnhancedUiStyles();
       setupHeaderButtons();
       renderAll();
-      bindForms();
       switchTab('home');
       scheduleAutoPull();
-      if (boot) boot.className = 'ready';
-      document.documentElement.dataset.lifeCompassReady = 'true';
+      if (bootStorageWarning) setTimeout(() => showToast(bootStorageWarning, 'warn'), 300);
     } catch (error) {
-      console.error('Life Compass startup error:', error);
-      if (boot) {
-        boot.className = 'error';
-        boot.textContent = '画面の初期化に失敗しました。ブラウザを再読み込みしてください。詳細: ' + (error && error.message ? error.message : String(error));
-      }
-      const home = document.getElementById('view-home');
-      if (home) home.classList.remove('hidden');
+      showBootFailure(error);
     }
   });
 })();
