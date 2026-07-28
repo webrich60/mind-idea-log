@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_5_3-tablet-fix-20260728';
+  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_5_4-stable-sync-tablet-20260728';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -72,6 +72,7 @@
     aiHistory: []
   });
 
+  cleanupUnsentQueue();
   let state = loadState();
   let activeTab = 'home';
 
@@ -477,20 +478,75 @@
     return { id:uid(), category, title, body, feeling:'', createdAt: time, updatedAt: nowIso() };
   }
 
+  function compactStateForBackup(source = state) {
+    const copy = structuredCloneSafe(source);
+    syncSections.forEach(section => {
+      if (!Array.isArray(copy[section])) return;
+      copy[section] = copy[section].map(item => {
+        if (!item || typeof item !== 'object') return item;
+        const cleaned = { ...item };
+        // バックアップの二重保存で容量を使い切らないよう、画像本体だけ除外する。
+        if (cleaned.imageData) cleaned.imageData = '';
+        if (cleaned.raw && typeof cleaned.raw === 'object') {
+          cleaned.raw = { ...cleaned.raw, imageData: '' };
+        }
+        return cleaned;
+      });
+    });
+    return copy;
+  }
+
+  function cleanupUnsentQueue() {
+    const key = 'life_compass_gas_unsent_queue';
+    const queue = safeParse(localStorage.getItem(key), [], key);
+    if (!Array.isArray(queue) || !queue.length) return;
+    const seen = new Set();
+    const cleaned = [];
+    for (const row of queue.slice(-20)) {
+      if (!row || !row.payload) continue;
+      const payload = structuredCloneSafe(row.payload);
+      if (payload.imageData) payload.imageData = '';
+      if (payload.raw && typeof payload.raw === 'object') payload.raw.imageData = '';
+      const signature = `${payload.action || ''}|${payload.section || ''}|${payload.id || payload.recordId || ''}|${payload.updatedAt || payload.createdAt || ''}`;
+      if (seen.has(signature)) continue;
+      seen.add(signature);
+      cleaned.push({ queuedAt: row.queuedAt || nowIso(), payload });
+    }
+    try { localStorage.setItem(key, JSON.stringify(cleaned.slice(-10))); } catch {}
+  }
+
   function persistState(next = state, options = {}) {
     dedupeLocalState(next);
     next.updatedAt = nowIso();
+    cleanupUnsentQueue();
     const text = JSON.stringify(next);
     try {
+      // 最初に本体を保存。バックアップは画像を除いた軽量版にする。
       localStorage.setItem(STORAGE_KEY, text);
-      localStorage.setItem(BACKUP_KEY, JSON.stringify({ savedAt: nowIso(), data: next }));
+      try {
+        localStorage.setItem(BACKUP_KEY, JSON.stringify({ savedAt: nowIso(), data: compactStateForBackup(next), lightweight: true }));
+      } catch {
+        // 本体が保存できていれば、容量不足時は古いバックアップだけ捨てて続行する。
+        try { localStorage.removeItem(BACKUP_KEY); } catch {}
+      }
       if (next?.profile && profileDataScore(next.profile) > 0) {
-        localStorage.setItem(PROFILE_SAFETY_KEY, JSON.stringify({ savedAt: nowIso(), profile: next.profile }));
+        try { localStorage.setItem(PROFILE_SAFETY_KEY, JSON.stringify({ savedAt: nowIso(), profile: next.profile })); } catch {}
       }
       return true;
     } catch (e) {
       if (e && (e.name === 'QuotaExceededError' || String(e).includes('quota'))) {
-        showToast('保存容量が足りません。バックアップ後、古いデータや画像を減らしてください。', 'error');
+        // 重複しやすい補助データを整理し、本体保存を一度だけ再試行する。
+        try {
+          localStorage.removeItem(BACKUP_KEY);
+          cleanupUnsentQueue();
+          localStorage.setItem(STORAGE_KEY, text);
+          if (next?.profile && profileDataScore(next.profile) > 0) {
+            try { localStorage.setItem(PROFILE_SAFETY_KEY, JSON.stringify({ savedAt: nowIso(), profile: next.profile })); } catch {}
+          }
+          showToast('容量を自動整理して保存しました。念のためJSONバックアップも作成してください。', 'warn');
+          return true;
+        } catch {}
+        showToast('端末保存容量が不足しています。JSONバックアップ後、添付画像を減らしてください。', 'error');
       } else {
         showToast('保存に失敗しました。ブラウザ設定や容量を確認してください。', 'error');
       }
@@ -629,13 +685,27 @@
     const localTime = dateValue(localProfile.profileUpdatedAt || localProfile.updatedAt);
     const remoteTime = dateValue(remoteProfile.profileUpdatedAt || remoteProfile.updatedAt);
 
-    // 空のクラウドプロフィールで、端末に保存済みのプロフィールを消さない。
     if (remoteScore === 0 && localScore > 0) return { ...remoteProfile, ...localProfile };
     if (localScore === 0 && remoteScore > 0) return { ...localProfile, ...remoteProfile };
 
-    // 両方に内容がある場合のみ、更新日時が新しい方を優先する。
-    if (remoteScore > 0 && remoteTime > localTime) return { ...localProfile, ...remoteProfile };
-    return { ...remoteProfile, ...localProfile };
+    const newer = remoteScore > 0 && remoteTime > localTime ? remoteProfile : localProfile;
+    const older = newer === remoteProfile ? localProfile : remoteProfile;
+    const merged = { ...older, ...newer };
+
+    // 人生比較を含む既存入力は、片方が空でも消さない（項目単位で非空値を保護）。
+    const protectedFields = [
+      'pastIdealLife','pastIdealReason','currentReality','currentSatisfaction',
+      'newDesiredLife','newIdealReason','lifeGapHealth','lifeGapWork','lifeGapMoney',
+      'lifeGapFamily','lifeGapFreedom','lifeComparisonAnalysis','lifeComparisonUpdatedAt'
+    ];
+    protectedFields.forEach(key => {
+      const newerValue = newer?.[key];
+      const olderValue = older?.[key];
+      if ((newerValue === '' || newerValue == null) && olderValue !== '' && olderValue != null) {
+        merged[key] = olderValue;
+      }
+    });
+    return merged;
   }
 
   function mergeRemoteState(remoteState = {}, deletions = {}) {
@@ -695,6 +765,7 @@
     await syncAllToSpreadsheet({ silent: true });
     await new Promise(resolve => setTimeout(resolve, 2600));
     await pullFromSpreadsheet({ manual: false });
+    try { localStorage.removeItem('life_compass_gas_unsent_queue'); } catch {}
     const c = sectionCountsOf(state);
     showToast(`完全同期完了：記録${c.entries}件 / AI${c.aiHistory}件 / プロフィール${c.profile ? 'あり' : '未入力'}。端末ごとに件数が違う場合は「クラウド正本で取り込み」を押してください。`, 'success');
     return true;
