@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_6_0-cloud-first-20260728';
+  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_6_1-safe-cloud-merge-20260728';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -20,7 +20,7 @@
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
   const emptyData = () => ({
-    version: 4.6,
+    version: 4.62,
     updatedAt: nowIso(),
     createdAt: nowIso(),
     profile: {
@@ -653,6 +653,7 @@
     syncSections.forEach(section => counts[section] = Array.isArray(data[section]) ? dedupeSectionArray(data[section]).length : 0);
     counts.entries = ['current','mind','insights','reflections','premises','future','goals','imports'].reduce((sum, k) => sum + (counts[k] || 0), 0);
     counts.profile = hasProfileData(data.profile || {}) ? 1 : 0;
+    counts.profileFields = profileDataScore(data.profile || {});
     return counts;
   }
 
@@ -722,7 +723,7 @@
 
     const profile = mergeProfileSafely(state.profile || {}, remote.profile || {});
 
-    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.6 };
+    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.62 };
     syncSections.forEach(section => {
       merged[section] = mergeEntryArrays(state[section] || [], remote[section] || [], section, deletions);
     });
@@ -768,7 +769,7 @@
     await pullFromSpreadsheet({ manual: false });
     try { localStorage.removeItem('life_compass_gas_unsent_queue'); } catch {}
     const c = sectionCountsOf(state);
-    showToast(`完全同期完了：記録${c.entries}件 / AI${c.aiHistory}件 / プロフィール${c.profile ? 'あり' : '未入力'}。端末ごとに件数が違う場合は「クラウド正本で取り込み」を押してください。`, 'success');
+    showToast(`完全同期完了：記録${c.entries}件 / AI${c.aiHistory}件 / プロフィール${c.profileFields || 0}項目。端末ごとに件数が違う場合は「クラウド正本で取り込み」を押してください。`, 'success');
     return true;
   }
 
@@ -783,7 +784,7 @@
       notebookDocUpdatedAt: state.profile.notebookDocUpdatedAt || remote.profile.notebookDocUpdatedAt || ''
     };
     const safeProfile = mergeProfileSafely(state.profile || {}, remote.profile || {});
-    const next = { ...remote, profile: { ...safeProfile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.6 };
+    const next = { ...remote, profile: { ...safeProfile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.62 };
     dedupeLocalState(next);
     return normalizeState(next);
   }
@@ -804,7 +805,7 @@
       state = next;
       renderAll();
       const c = sectionCountsOf(state);
-      showToast(`クラウド正本で取り込み完了：記録${c.entries}件 / AI${c.aiHistory}件 / プロフィール${c.profile ? 'あり' : '未入力'}`, 'success');
+      showToast(`クラウド正本で取り込み完了：記録${c.entries}件 / AI${c.aiHistory}件 / プロフィール${c.profileFields || 0}項目`, 'success');
       return true;
     } catch (e) {
       console.error('Cloud authoritative pull failed', e);
@@ -935,8 +936,9 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     const payload = {
       action: 'stateSnapshot',
       app: 'Life Compass Coach',
-      appVersion: 4.6,
+      appVersion: 4.62,
       sentAt: nowIso(),
+      syncToken: options.syncToken || '',
       section: 'system',
       id: 'state_main',
       updatedAt: state.updatedAt || nowIso(),
@@ -946,7 +948,7 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
       await fetch(url, {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload), keepalive: true
+        body: JSON.stringify(payload)
       });
       state.profile.lastCloudPushAt = nowIso();
       try { localStorage.setItem('life_compass_last_cloud_push', state.profile.lastCloudPushAt); } catch {}
@@ -991,6 +993,28 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     sendToSpreadsheet(action, section, record);
   }
 
+  async function waitForSyncToken(syncToken, timeoutMs = 45000) {
+    const started = Date.now();
+    while (Date.now() - started < timeoutMs) {
+      try {
+        const status = await gasJsonp('syncStatus', { token: syncToken }, 15000);
+        if (status?.saved) return status;
+      } catch (_) {}
+      await new Promise(resolve => setTimeout(resolve, 1400));
+    }
+    return null;
+  }
+
+  async function sendVerifiedProfile() {
+    if (!hasProfileData()) return { ok: true, skipped: true, profileFields: 0 };
+    const syncToken = `profile_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const sent = await sendToSpreadsheet('syncAll', 'profile', buildProfileRecord(), { syncToken });
+    if (!sent) return { ok: false, message: 'プロフィール送信に失敗しました。' };
+    const verified = await waitForSyncToken(syncToken);
+    if (!verified) return { ok: false, message: 'GAS側でプロフィール保存を確認できませんでした。WebアプリURL・再デプロイ・実行ユーザー設定を確認してください。' };
+    return { ok: true, profileFields: Number(verified.profileFields || 0) };
+  }
+
   async function syncAllToSpreadsheet(options = {}) {
     if (!getGasUrl()) {
       if (!options.silent) showToast('GAS WebアプリURLを先に設定してください', 'warn');
@@ -999,16 +1023,31 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     dedupeLocalState(state);
     persistState(state, { silent: true });
     const all = getAllEntries();
-    if (!options.silent) showToast(`クラウド正本と記録 ${all.length + (hasProfileData() ? 1 : 0)}件を更新します`, 'normal');
+    if (!options.silent) showToast(`プロフィールを確認付きで保存し、記録${all.length}件を同期します`, 'normal');
+
+    // 最重要データのプロフィールは、GAS保存完了を確認してから他の記録へ進む。
+    const profileResult = await sendVerifiedProfile();
+    if (!profileResult.ok) {
+      if (!options.silent) showToast(profileResult.message, 'error');
+      return false;
+    }
+
+    // 大きな全体スナップショットは補助保存。プロフィール同期は上で確定済み。
     await sendCloudSnapshot({ silent: true });
-    if (hasProfileData()) await sendToSpreadsheet('syncAll', 'profile', buildProfileRecord());
-    for (const entry of all) {
-      await sendToSpreadsheet('syncAll', entry.section, entry);
+    for (const entry of all) await sendToSpreadsheet('syncAll', entry.section, entry);
+    for (const history of dedupeSectionArray(state.aiHistory)) await sendToSpreadsheet('syncAll', 'aiHistory', history);
+
+    if (!options.silent) {
+      showToast(`GAS保存確認済み：プロフィール${profileResult.profileFields || 0}項目。クラウドから最終取得します…`, 'normal');
+      await new Promise(resolve => setTimeout(resolve, 1800));
+      const verified = await pullFromSpreadsheet({ manual: false });
+      const c = sectionCountsOf(state);
+      if (verified && c.profileFields >= (profileResult.profileFields || 0)) {
+        showToast(`同期完了：プロフィール${c.profileFields || 0}項目 / 記録${c.entries}件`, 'success');
+      } else {
+        showToast('プロフィールはGASへ保存済みですが、最終取得の確認に失敗しました。少し待って「スプレッドシートから取得」を押してください。', 'warn');
+      }
     }
-    for (const history of dedupeSectionArray(state.aiHistory)) {
-      await sendToSpreadsheet('syncAll', 'aiHistory', history);
-    }
-    if (!options.silent) showToast('クラウド正本とNotebookLM用データを更新しました。', 'success');
     return true;
   }
 
