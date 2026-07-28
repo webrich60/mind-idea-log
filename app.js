@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_6_3-profile-sync-hotfix-20260728';
+  const LIFE_COMPASS_UI_VERSION = 'life-compass-v4_6_4-tablet-stable-20260728';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -881,7 +881,7 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     return copy;
   }
 
-  function buildSheetPayload(action, section, record = {}) {
+  function buildSheetPayload(action, section, record = {}, options = {}) {
     const normalized = normalizeForSheet(section, record);
     return {
       action,
@@ -906,7 +906,8 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
       imageData: record.imageData || '',
       imageName: record.imageName || '',
       imageMimeType: record.imageMimeType || '',
-      raw: sanitizeRecordForSheet(record)
+      raw: sanitizeRecordForSheet(record),
+      syncToken: options.syncToken || ''
     };
   }
 
@@ -967,11 +968,7 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
       if (options.manual) showToast('GAS WebアプリURLを先に設定してください', 'warn');
       return false;
     }
-    const payload = buildSheetPayload(action, section, record);
-    // v4.6.3: 保存確認用トークンを必ずPOST本文へ含める。
-    // v4.6.2では options.syncToken を作成しても payload に入れておらず、
-    // GAS側が保存完了を記録できないため、確認同期が成立していなかった。
-    if (options.syncToken) payload.syncToken = String(options.syncToken);
+    const payload = buildSheetPayload(action, section, record, options);
     try {
       await fetch(url, {
         method: 'POST',
@@ -1022,17 +1019,6 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
   async function syncAllToSpreadsheet(options = {}) {
     if (!getGasUrl()) {
       if (!options.silent) showToast('GAS WebアプリURLを先に設定してください', 'warn');
-      return false;
-    }
-    try {
-      const ping = await gasJsonp('ping', {}, 15000);
-      const msg = String(ping?.message || '');
-      if (!msg.includes('v4.6.3')) {
-        if (!options.silent) showToast('GASが旧バージョンです。Code.gsを更新し、新しいデプロイURLを保存してください。', 'error');
-        return false;
-      }
-    } catch (e) {
-      if (!options.silent) showToast('GAS接続確認に失敗しました。WebアプリURLと公開設定を確認してください。', 'error');
       return false;
     }
     dedupeLocalState(state);
@@ -2488,11 +2474,24 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
   window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, sendCloudSnapshot, pullFromSpreadsheet, twoWaySync, repairDeviceMismatch, pullCloudAsSourceOfTruth, checkCloudCounts, restoreProtectedProfile, renderMindMap, renderLifeComparison, runLifeComparisonAnalysis, openNotebookDocGenerator, state: () => state };
 
   document.addEventListener('DOMContentLoaded', () => {
-    injectEnhancedUiStyles();
-    setupHeaderButtons();
-    renderAll();
-    bindForms();
-    switchTab('home');
-    scheduleAutoPull();
+    const boot = document.getElementById('bootStatus');
+    try {
+      injectEnhancedUiStyles();
+      setupHeaderButtons();
+      renderAll();
+      bindForms();
+      switchTab('home');
+      scheduleAutoPull();
+      if (boot) boot.className = 'ready';
+      document.documentElement.dataset.lifeCompassReady = 'true';
+    } catch (error) {
+      console.error('Life Compass startup error:', error);
+      if (boot) {
+        boot.className = 'error';
+        boot.textContent = '画面の初期化に失敗しました。ブラウザを再読み込みしてください。詳細: ' + (error && error.message ? error.message : String(error));
+      }
+      const home = document.getElementById('view-home');
+      if (home) home.classList.remove('hidden');
+    }
   });
 })();
