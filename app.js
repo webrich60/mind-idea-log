@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_5_2-mobile-ui-20260727';
+  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_5_3-tablet-fix-20260728';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
