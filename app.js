@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_5_4-stable-sync-tablet-20260728';
+  const LIFE_COMPASS_UI_VERSION = 'life-compare-v4_6_0-cloud-first-20260728';
 
   const STORAGE_KEY = 'life_compass_coach_v3';
   const BACKUP_KEY = 'life_compass_coach_v3_backup_latest';
@@ -20,7 +20,7 @@
     .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
   const emptyData = () => ({
-    version: 4.5,
+    version: 4.6,
     updatedAt: nowIso(),
     createdAt: nowIso(),
     profile: {
@@ -379,7 +379,7 @@
   }
 
   function profileDataScore(profile = {}) {
-    const keys = ['name','age','familyStructure','medicalHistory','likedThings','strongThings','workHistory','traumaHistory','values','personalityTraits','lifeTimeline','currentConstraints','supportNeeded','memo'];
+    const keys = ['name','age','familyStructure','medicalHistory','likedThings','strongThings','workHistory','traumaHistory','values','personalityTraits','lifeTimeline','currentConstraints','supportNeeded','memo','pastIdealLife','pastIdealReason','currentReality','newDesiredLife','newIdealReason','lifeGapHealth','lifeGapWork','lifeGapMoney','lifeGapFamily','lifeGapFreedom','lifeComparisonAnalysis'];
     return keys.reduce((score, key) => score + (String(profile?.[key] || '').trim() ? 1 : 0), 0);
   }
 
@@ -449,7 +449,7 @@
     ['current','mind','insights','reflections','premises','future','goals','imports','aiHistory'].forEach(k => {
       merged[k] = Array.isArray(data[k]) ? data[k] : [];
     });
-    merged.version = 4.5;
+    merged.version = 4.6;
     return merged;
   }
 
@@ -512,7 +512,7 @@
       seen.add(signature);
       cleaned.push({ queuedAt: row.queuedAt || nowIso(), payload });
     }
-    try { localStorage.setItem(key, JSON.stringify(cleaned.slice(-10))); } catch {}
+    try { localStorage.setItem(key, JSON.stringify(cleaned.slice(-5))); } catch {}
   }
 
   function persistState(next = state, options = {}) {
@@ -565,6 +565,7 @@
     }
     renderAll();
     if (successMessage) showToast(successMessage, 'success');
+    scheduleCloudSnapshot();
     return true;
   }
 
@@ -721,7 +722,7 @@
 
     const profile = mergeProfileSafely(state.profile || {}, remote.profile || {});
 
-    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.5 };
+    const merged = { ...state, ...remote, profile: { ...profile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.6 };
     syncSections.forEach(section => {
       merged[section] = mergeEntryArrays(state[section] || [], remote[section] || [], section, deletions);
     });
@@ -782,7 +783,7 @@
       notebookDocUpdatedAt: state.profile.notebookDocUpdatedAt || remote.profile.notebookDocUpdatedAt || ''
     };
     const safeProfile = mergeProfileSafely(state.profile || {}, remote.profile || {});
-    const next = { ...remote, profile: { ...safeProfile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.5 };
+    const next = { ...remote, profile: { ...safeProfile, ...keepSettings, lastSyncAt: nowIso() }, updatedAt: nowIso(), version: 4.6 };
     dedupeLocalState(next);
     return normalizeState(next);
   }
@@ -908,6 +909,56 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     };
   }
 
+  function buildCloudSnapshotState() {
+    const snapshot = compactStateForBackup(state);
+    // 端末固有設定はクラウド正本へ保存しない。
+    if (snapshot.profile) {
+      snapshot.profile.gasUrl = '';
+      snapshot.profile.gasSyncEnabled = true;
+      snapshot.profile.syncPullEnabled = true;
+    }
+    snapshot.version = 4.6;
+    snapshot.updatedAt = state.updatedAt || nowIso();
+    return snapshot;
+  }
+
+  let cloudSnapshotTimer = null;
+  function scheduleCloudSnapshot(delayMs = 1200) {
+    if (!isGasSyncEnabled()) return;
+    clearTimeout(cloudSnapshotTimer);
+    cloudSnapshotTimer = setTimeout(() => sendCloudSnapshot({ silent: true }), delayMs);
+  }
+
+  async function sendCloudSnapshot(options = {}) {
+    const url = getGasUrl();
+    if (!url) return false;
+    const payload = {
+      action: 'stateSnapshot',
+      app: 'Life Compass Coach',
+      appVersion: 4.6,
+      sentAt: nowIso(),
+      section: 'system',
+      id: 'state_main',
+      updatedAt: state.updatedAt || nowIso(),
+      rawState: buildCloudSnapshotState()
+    };
+    try {
+      await fetch(url, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(payload), keepalive: true
+      });
+      state.profile.lastCloudPushAt = nowIso();
+      try { localStorage.setItem('life_compass_last_cloud_push', state.profile.lastCloudPushAt); } catch {}
+      if (!options.silent) showToast('クラウド正本を更新しました。', 'success');
+      return true;
+    } catch (e) {
+      console.error('Cloud snapshot failed', e);
+      if (!options.silent) showToast('クラウド正本の更新に失敗しました。', 'error');
+      return false;
+    }
+  }
+
   async function sendToSpreadsheet(action, section, record = {}, options = {}) {
     const url = getGasUrl();
     if (!url) {
@@ -948,7 +999,8 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     dedupeLocalState(state);
     persistState(state, { silent: true });
     const all = getAllEntries();
-    if (!options.silent) showToast(`全データ ${all.length + (hasProfileData() ? 1 : 0)}件を送信します`, 'normal');
+    if (!options.silent) showToast(`クラウド正本と記録 ${all.length + (hasProfileData() ? 1 : 0)}件を更新します`, 'normal');
+    await sendCloudSnapshot({ silent: true });
     if (hasProfileData()) await sendToSpreadsheet('syncAll', 'profile', buildProfileRecord());
     for (const entry of all) {
       await sendToSpreadsheet('syncAll', entry.section, entry);
@@ -956,7 +1008,7 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
     for (const history of dedupeSectionArray(state.aiHistory)) {
       await sendToSpreadsheet('syncAll', 'aiHistory', history);
     }
-    if (!options.silent) showToast('全データ送信が完了しました。NotebookLM_Sourceシートにも反映されます。', 'success');
+    if (!options.silent) showToast('クラウド正本とNotebookLM用データを更新しました。', 'success');
     return true;
   }
 
@@ -1288,6 +1340,7 @@ PCとスマホの両方で1回ずつ実行すると件数がそろいやすく�
         st.profile.profileUpdatedAt = nowIso();
       }, '人生比較を保存しました')) {
         autoSendToSpreadsheet('create', 'profile', buildProfileRecord());
+        sendCloudSnapshot({ silent: true });
       }
     };
     document.getElementById('lifeCompareAiBtn').onclick = runLifeComparisonAnalysis;
@@ -2222,7 +2275,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 font-bold text-sm">
               ${statusRow('保存キー', STORAGE_KEY)}
               ${statusRow('最終更新', new Date(state.updatedAt).toLocaleString('ja-JP'))}
-              ${statusRow('推定サイズ', `${(size/1024).toFixed(1)} KB`)}
+              ${statusRow('端末キャッシュ推定サイズ', `${(size/1024).toFixed(1)} KB`)}
               ${statusRow('自動バックアップ', localStorage.getItem(BACKUP_KEY) ? 'あり' : 'なし')}
               ${statusRow('GAS連携', getGasUrl() ? (state.profile.gasSyncEnabled !== false ? '自動送信ON' : 'URL設定済み / 自動送信OFF') : '未設定')}
               ${statusRow('端末同期', getGasUrl() ? (state.profile.syncPullEnabled !== false ? '起動時自動取得ON' : '手動取得のみ') : 'GAS URL未設定')}
@@ -2378,7 +2431,7 @@ ${recentImports.length ? recentImports.map(r => `・${r.title}：${shorten(r.bod
     document.getElementById('quickSaveBtn').onclick = () => showToast(`最終保存：${new Date(state.updatedAt).toLocaleString('ja-JP')} / GAS：${isGasSyncEnabled() ? 'ON' : 'OFF'} / 同期：${isPullSyncEnabled() ? 'ON' : 'OFF'}`, 'success');
   }
 
-  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, pullFromSpreadsheet, twoWaySync, repairDeviceMismatch, pullCloudAsSourceOfTruth, checkCloudCounts, restoreProtectedProfile, renderMindMap, renderLifeComparison, runLifeComparisonAnalysis, openNotebookDocGenerator, state: () => state };
+  window.LifeCompass = { switchTab, exportJson, syncAllToSpreadsheet, sendCloudSnapshot, pullFromSpreadsheet, twoWaySync, repairDeviceMismatch, pullCloudAsSourceOfTruth, checkCloudCounts, restoreProtectedProfile, renderMindMap, renderLifeComparison, runLifeComparisonAnalysis, openNotebookDocGenerator, state: () => state };
 
   document.addEventListener('DOMContentLoaded', () => {
     injectEnhancedUiStyles();
